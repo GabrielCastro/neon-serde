@@ -1,0 +1,9 @@
+[package]
+name = "neon-serde"
+version = "0.1.0"
+authors = ["Gabriel Castro <dev@GabrielCastro.ca>"]
+
+[dependencies]
+serde = "1.0.0"
+error-chain = "*"
+neon = "*"
