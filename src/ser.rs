@@ -1,13 +1,14 @@
 
 use serde::ser::{self, Serialize};
 use errors::Error;
+use errors::ErrorKind;
 use errors::Result as LibResult;
 use neon::js;
 use neon::mem::Handle;
 use neon::scope::Scope;
 use neon::scope::RootScope;
 
-pub fn to_value<'value, 'shandle, 'scope, V: Serialize, S: Scope<'scope>>(
+pub fn to_value<'value, 'shandle, 'scope, V: Serialize>(
     value: &'value V,
     scope: &'shandle mut RootScope<'scope>
 ) -> LibResult<Handle<'shandle, js::JsValue>>
@@ -101,11 +102,16 @@ impl<'a, 'b: 'a> ser::Serializer for Serializer<'a, 'b>
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        let mut b = [0; 2];
+        let result = v.encode_utf8(&mut b);
+        let js_str = js::JsString::new(self.0, result).ok_or_else(|| ErrorKind::StringTooLong(2))?;
+        Ok(js_str.upcast())
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        let len = v.len();
+        let js_str = js::JsString::new(self.0, v).ok_or_else(|| ErrorKind::StringTooLong(len))?;
+        Ok(js_str.upcast())
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
@@ -113,22 +119,22 @@ impl<'a, 'b: 'a> ser::Serializer for Serializer<'a, 'b>
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        Ok(js::JsUndefined::new().upcast())
     }
 
     fn serialize_some<T: ? Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
         where
             T: Serialize,
     {
-        unimplemented!()
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        Ok(js::JsNull::new().upcast())
     }
 
     fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        Ok(js::JsNull::new().upcast())
     }
 
     fn serialize_unit_variant(
@@ -137,7 +143,7 @@ impl<'a, 'b: 'a> ser::Serializer for Serializer<'a, 'b>
         variant_index: u32,
         variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        self.serialize_str(variant)
     }
 
     fn serialize_newtype_struct<T: ? Sized>(
@@ -148,7 +154,7 @@ impl<'a, 'b: 'a> ser::Serializer for Serializer<'a, 'b>
         where
             T: Serialize,
     {
-        unimplemented!()
+        value.serialize(self)
     }
 
     fn serialize_newtype_variant<T: ? Sized>(

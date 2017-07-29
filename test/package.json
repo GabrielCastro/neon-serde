@@ -5,10 +5,12 @@
   "main": "lib/index.js",
   "author": "Gabriel Castro <dev@GabrielCastro.ca>",
   "license": "MIT",
-  "dependencies": {
+  "devDependencies": {
+    "jest": "^20.0.4",
     "neon-cli": "^0.1.18"
   },
   "scripts": {
-    "install": "neon build"
+    "install": "neon build",
+    "test": "neon build && jest"
   }
 }
