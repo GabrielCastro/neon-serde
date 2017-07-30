@@ -7,3 +7,4 @@ authors = ["Gabriel Castro <dev@GabrielCastro.ca>"]
 serde = "1.0.0"
 error-chain = "*"
 neon = "*"
+cast = "*"

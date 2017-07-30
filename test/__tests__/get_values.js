@@ -24,4 +24,22 @@ describe('all values', () => {
             'c': 'Hi'
         });
     });
+
+    test.skip('value map', () => {
+        expect(native.make_map()).toEqual({
+            'a': 1,
+            'b': 2,
+            'c': 3
+        });
+    });
+
+    test('expect_hello_world', () => {
+        native.expect_hello_world("hello world");
+    });
+
+    test('expect_obj', () => {
+        native.expect_obj({
+
+        });
+    });
 });

@@ -4,8 +4,10 @@ extern crate serde;
 #[macro_use]
 extern crate error_chain;
 extern crate neon;
+extern crate cast;
 
 pub mod ser;
+pub mod de;
 
 pub mod errors {
     use serde::{ser, de};
@@ -22,6 +24,7 @@ pub mod errors {
         }
         foreign_links {
             Js(neon::vm::Throw);
+            NumberCastError(::cast::Error);
         }
     }
 
@@ -47,3 +50,4 @@ pub mod errors {
 }
 
 pub use ser::to_value;
+pub use de::from_handle;
