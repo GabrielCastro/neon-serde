@@ -239,7 +239,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_seq(CommaSeparated::new(&mut self)?)
+        visitor.visit_seq(JsArrayAccess::new(&mut self)?)
     }
 
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
@@ -308,16 +308,16 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
 }
 
 
-struct CommaSeparated<'a, 'de: 'a> {
+struct JsArrayAccess<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
     idx: u32,
     len: u32,
 }
 
-impl<'a, 'de> CommaSeparated<'a, 'de> {
+impl<'a, 'de> JsArrayAccess<'a, 'de> {
     fn new(de: &'a mut Deserializer<'de>) -> LibResult<Self> {
         let len = de.input.check::<js::JsArray>()?.len();
-        Ok(CommaSeparated {
+        Ok(JsArrayAccess {
             de: de,
             idx: 0,
             len,
@@ -325,7 +325,7 @@ impl<'a, 'de> CommaSeparated<'a, 'de> {
     }
 }
 
-impl<'de, 'a> SeqAccess<'de> for CommaSeparated<'a, 'de> {
+impl<'de, 'a> SeqAccess<'de> for JsArrayAccess<'a, 'de> {
     type Error = LibError;
 
     fn next_element_seed<T>(&mut self, seed: T) -> LibResult<Option<T::Value>>
