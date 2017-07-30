@@ -6,13 +6,17 @@ use neon::mem::Handle;
 use neon::scope::RootScope;
 use neon::js;
 use neon::js::binary::JsBuffer;
-use serde::de::{MapAccess,DeserializeSeed};
-
+use serde::de::{MapAccess, DeserializeSeed, SeqAccess};
+use neon::js::Object;
 use neon::js::Variant::*;
 use cast;
 
+use serde::Deserializer as _0;
 
-pub fn from_handle<'a, T>(input: Handle<'a, js::JsValue>, scope: &'a RootScope<'a>) -> LibResult<T>
+pub fn from_handle<'a, T>(
+    input: Handle<'a, js::JsValue>,
+    scope: &'a mut RootScope<'a>,
+) -> LibResult<T>
 where
     T: serde::Deserialize<'a> + ?Sized,
 {
@@ -24,11 +28,11 @@ where
 
 pub struct Deserializer<'de> {
     input: Handle<'de, js::JsValue>,
-    scope: &'de RootScope<'de>
+    scope: &'de mut RootScope<'de>,
 }
 
 impl<'de> Deserializer<'de> {
-    fn new(input: Handle<'de, js::JsValue>, scope: &'de RootScope<'de>) -> Self {
+    fn new(input: Handle<'de, js::JsValue>, scope: &'de mut RootScope<'de>) -> Self {
         Deserializer { input, scope }
     }
 
@@ -56,9 +60,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
         match self.input.variant() {
             Null(_) => visitor.visit_bool(false),
             Undefined(_) => visitor.visit_bool(false),
-            Boolean(val) => {
-                visitor.visit_bool(val.value())
-            }
+            Boolean(val) => visitor.visit_bool(val.value()),
             Number(val) => {
                 let num = val.value();
                 visitor.visit_bool(num != 0.0)
@@ -233,12 +235,11 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
         unimplemented!()
     }
 
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_seq<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-
-        unimplemented!()
+        visitor.visit_seq(CommaSeparated::new(&mut self)?)
     }
 
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
@@ -306,3 +307,46 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     }
 }
 
+
+struct CommaSeparated<'a, 'de: 'a> {
+    de: &'a mut Deserializer<'de>,
+    idx: u32,
+    len: u32,
+}
+
+impl<'a, 'de> CommaSeparated<'a, 'de> {
+    fn new(de: &'a mut Deserializer<'de>) -> LibResult<Self> {
+        let len = de.input.check::<js::JsArray>()?.len();
+        Ok(CommaSeparated {
+            de: de,
+            idx: 0,
+            len,
+        })
+    }
+}
+
+impl<'de, 'a> SeqAccess<'de> for CommaSeparated<'a, 'de> {
+    type Error = LibError;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> LibResult<Option<T::Value>>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        if self.idx >= self.len {
+            return Ok(None);
+        }
+        let as_array = self.de.input.check::<js::JsArray>()?;
+        let v = as_array.get(self.de.scope, self.idx)?;
+        self.idx += 1;
+
+
+        let old_input = self.de.input;
+        self.de.input = v;
+
+        let res = seed.deserialize(&mut *self.de).map(Some);
+
+        self.de.input = old_input;
+
+        res
+    }
+}
