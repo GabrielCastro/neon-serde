@@ -310,16 +310,20 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_identifier: unimplmented");
-        unimplemented!()
+        match self.input.variant() {
+            String(val) => visitor.visit_string(val.value()),
+            Number(val) => visitor.visit_f64(val.value()),
+            _ => {
+                Err("key is neither string nor number")?
+            }
+        }
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_ignored_any: unimplmented");
-        unimplemented!()
+        self.deserialize_any(visitor)
     }
 }
 

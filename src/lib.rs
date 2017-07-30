@@ -42,7 +42,6 @@ pub mod errors {
 
     impl From<Error> for neon::vm::Throw {
         fn from(err: Error) -> Self {
-            eprintln!("{:?}", err);
             ::neon::vm::Throw
         }
     }
