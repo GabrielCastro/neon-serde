@@ -7,8 +7,9 @@ use neon::js;
 use neon::mem::Handle;
 use neon::scope::Scope;
 use neon::scope::RootScope;
+use neon::js::Object;
 
-pub fn to_value<'value, 'shandle, 'scope, V: Serialize>(
+pub fn to_value<'value, 'shandle, 'scope, V: Serialize + ?Sized>(
     value: &'value V,
     scope: &'shandle mut RootScope<'scope>
 ) -> LibResult<Handle<'shandle, js::JsValue>>
@@ -22,7 +23,7 @@ pub struct Serializer<'a, 'b: 'a>(&'a mut RootScope<'b>);
 
 
 #[doc(hidden)]
-pub struct ArraySerializer<'a, S>(&'a mut S) where S: 'a + Scope<'a>;
+pub struct ArraySerializer<'a, 'b: 'a>(&'a mut RootScope<'b>, Handle<'b, js::JsArray>);
 
 #[doc(hidden)]
 pub struct TupleSerializer<'a, S>(&'a mut S) where S: 'a + Scope<'a>;
@@ -48,7 +49,7 @@ impl<'a, 'b: 'a> ser::Serializer for Serializer<'a, 'b>
     type Ok = Handle<'a, js::JsValue>;
     type Error = Error;
 
-    type SerializeSeq = ArraySerializer<'a, RootScope<'a>>;
+    type SerializeSeq = ArraySerializer<'a, 'b>;
     type SerializeTuple = TupleSerializer<'a, RootScope<'a>>;
     type SerializeTupleStruct = TupleStructSerializer<'a, RootScope<'a>>;
     type SerializeTupleVariant = TupleVariantSerializer<'a, RootScope<'a>>;
@@ -171,7 +172,7 @@ impl<'a, 'b: 'a> ser::Serializer for Serializer<'a, 'b>
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-        unimplemented!()
+        Ok(ArraySerializer::new(self.0))
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
@@ -220,7 +221,14 @@ impl<'a, 'b: 'a> ser::Serializer for Serializer<'a, 'b>
 }
 
 
-impl<'a, S: 'a + Scope<'a>> ser::SerializeSeq for ArraySerializer<'a, S> {
+impl<'a, 'b: 'a> ArraySerializer<'a, 'b> {
+    fn new(scope: &'a mut RootScope<'b>) -> Self {
+        let arr = js::JsArray::new(scope, 0);
+        ArraySerializer(scope, arr)
+    }
+}
+
+impl<'a, 'b: 'a> ser::SerializeSeq for ArraySerializer<'a, 'b> {
     type Ok = Handle<'a, js::JsValue>;
     type Error = Error;
 
@@ -228,11 +236,16 @@ impl<'a, S: 'a + Scope<'a>> ser::SerializeSeq for ArraySerializer<'a, S> {
         where
             T: Serialize,
     {
-        unimplemented!()
+        let value = to_value(value, self.0)?;
+
+        let arr :Handle<js::JsArray> = self.1;
+        let len = arr.len();
+        arr.set(len, value)?;
+        Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        Ok(self.1.upcast())
     }
 }
 
