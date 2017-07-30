@@ -13,35 +13,51 @@ pub fn to_value<'value, 'shandle, 'scope, V: Serialize + ? Sized>(
     scope: &'shandle mut RootScope<'scope>
 ) -> LibResult<Handle<'shandle, js::JsValue>>
 {
-    let serializer = Serializer(scope);
+    let serializer = Serializer { scope };
     let serialized = value.serialize(serializer)?;
     Ok(serialized)
 }
 
-pub struct Serializer<'a, 'b: 'a>(&'a mut RootScope<'b>);
-
-
-#[doc(hidden)]
-pub struct ArraySerializer<'a, 'b: 'a>(&'a mut RootScope<'b>, Handle<'b, js::JsArray>);
+pub struct Serializer<'a, 'b: 'a> {
+    scope: &'a mut RootScope<'b>
+}
 
 #[doc(hidden)]
-pub struct TupleSerializer<'a, S>(&'a mut S) where S: 'a + Scope<'a>;
+pub struct ArraySerializer<'a, 'b: 'a> {
+    scope: &'a mut RootScope<'b>,
+    array: Handle<'b, js::JsArray>
+}
 
 #[doc(hidden)]
-pub struct TupleStructSerializer<'a, S>(&'a mut S) where S: 'a + Scope<'a>;
+pub struct TupleSerializer<'a, S> where S: 'a + Scope<'a> {
+    scope: &'a mut S
+}
 
 #[doc(hidden)]
-pub struct TupleVariantSerializer<'a, S>(&'a mut S) where S: 'a + Scope<'a>;
+pub struct TupleStructSerializer<'a, S> where S: 'a + Scope<'a> {
+    scope: &'a mut S
+}
 
 #[doc(hidden)]
-pub struct MapSerializer<'a, S>(&'a mut S) where S: 'a + Scope<'a>;
+pub struct TupleVariantSerializer<'a, S> where S: 'a + Scope<'a> {
+    scope: &'a mut S
+}
 
 #[doc(hidden)]
-pub struct StructSerializer<'a, 'b: 'a>(&'a mut RootScope<'b>, Handle<'b, js::JsObject>);
+pub struct MapSerializer<'a, S> where S: 'a + Scope<'a> {
+    scope: &'a mut S
+}
 
 #[doc(hidden)]
-pub struct StructVariantSerializer<'a, S>(&'a mut S) where S: 'a + Scope<'a>;
+pub struct StructSerializer<'a, 'b: 'a> {
+    scope: &'a mut RootScope<'b>,
+    object: Handle<'b, js::JsObject>
+}
 
+#[doc(hidden)]
+pub struct StructVariantSerializer<'a, S> where S: 'a + Scope<'a> {
+    scope: &'a mut S
+}
 
 impl<'a, 'b> ser::Serializer for Serializer<'a, 'b>
 {
@@ -58,59 +74,59 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b>
 
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsBoolean::new(self.0, v).upcast())
+        Ok(js::JsBoolean::new(self.scope, v).upcast())
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.0, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
         let mut b = [0; 2];
         let result = v.encode_utf8(&mut b);
-        let js_str = js::JsString::new(self.0, result).ok_or_else(|| ErrorKind::StringTooLong(2))?;
+        let js_str = js::JsString::new(self.scope, result).ok_or_else(|| ErrorKind::StringTooLong(2))?;
         Ok(js_str.upcast())
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
         let len = v.len();
-        let js_str = js::JsString::new(self.0, v).ok_or_else(|| ErrorKind::StringTooLong(len))?;
+        let js_str = js::JsString::new(self.scope, v).ok_or_else(|| ErrorKind::StringTooLong(len))?;
         Ok(js_str.upcast())
     }
 
@@ -172,7 +188,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b>
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-        Ok(ArraySerializer::new(self.0))
+        Ok(ArraySerializer::new(self.scope))
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
@@ -206,7 +222,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b>
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        Ok(StructSerializer::new(self.0))
+        Ok(StructSerializer::new(self.scope))
     }
 
     fn serialize_struct_variant(
@@ -223,8 +239,11 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b>
 
 impl<'a, 'b: 'a> ArraySerializer<'a, 'b> {
     fn new(scope: &'a mut RootScope<'b>) -> Self {
-        let arr = js::JsArray::new(scope, 0);
-        ArraySerializer(scope, arr)
+        let array = js::JsArray::new(scope, 0);
+        ArraySerializer {
+            scope,
+            array
+        }
     }
 }
 
@@ -236,16 +255,16 @@ impl<'a, 'b: 'a> ser::SerializeSeq for ArraySerializer<'a, 'b> {
         where
             T: Serialize,
     {
-        let value = to_value(value, self.0)?;
+        let value = to_value(value, self.scope)?;
 
-        let arr: Handle<js::JsArray> = self.1;
+        let arr: Handle<js::JsArray> = self.array;
         let len = arr.len();
         arr.set(len, value)?;
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(self.1.upcast())
+        Ok(self.array.upcast())
     }
 }
 
@@ -318,9 +337,12 @@ impl<'a, S: 'a + Scope<'a>> ser::SerializeMap for MapSerializer<'a, S> {
 }
 
 impl<'a, 'b> StructSerializer<'a, 'b> {
-    fn new(scope: & 'a mut RootScope <'b> ) -> Self {
-        let arr = js::JsObject::new(scope);
-        StructSerializer(scope, arr)
+    fn new(scope: &'a mut RootScope<'b>) -> Self {
+        let object = js::JsObject::new(scope);
+        StructSerializer {
+            scope,
+            object
+        }
     }
 }
 
@@ -336,13 +358,13 @@ impl<'a, 'b> ser::SerializeStruct for StructSerializer<'a, 'b> {
         where
             T: Serialize,
     {
-        let value = to_value(value, self.0)?;
-        self.1.set(key, value)?;
+        let value = to_value(value, self.scope)?;
+        self.object.set(key, value)?;
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(self.1.upcast())
+        Ok(self.object.upcast())
     }
 }
 
