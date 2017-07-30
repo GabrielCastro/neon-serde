@@ -38,7 +38,11 @@ describe('all values', () => {
     });
 
     test('expect_obj', () => {
-        native.expect_obj({});
+        native.expect_obj({
+            a: 1,
+            b: 2,
+            c: 3
+        });
     });
 
     test('expect_num_array', () => {

@@ -49,7 +49,10 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
         match self.input.variant() {
             Null(_) => visitor.visit_unit(),
             String(val) => visitor.visit_string("A".into()),
-            _ => unimplemented!(),
+            _ => {
+                eprintln!("deserialize_any: unimplmented");
+                unimplemented!()
+            }
         }
     }
 
@@ -166,6 +169,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_char: unimplmented");
         unimplemented!()
     }
 
@@ -173,6 +177,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_str: unimplmented");
         unimplemented!()
     }
 
@@ -189,6 +194,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_bytes: unimplmented");
         unimplemented!()
     }
 
@@ -196,6 +202,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_byte_buf: unimplmented");
         unimplemented!()
     }
 
@@ -203,6 +210,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_option: unimplmented");
         unimplemented!()
     }
 
@@ -210,6 +218,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_unit: unimplmented");
         unimplemented!()
     }
 
@@ -221,6 +230,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_unit_struct: unimplmented");
         unimplemented!()
     }
 
@@ -232,6 +242,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_newtype_struct: unimplmented");
         unimplemented!()
     }
 
@@ -246,6 +257,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_tuple: unimplmented");
         unimplemented!()
     }
 
@@ -258,14 +270,15 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_tuple_struct: unimplmented");
         unimplemented!()
     }
 
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_map<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        unimplemented!()
+        visitor.visit_map(JsObjectAccess::new(&mut self)?)
     }
 
     fn deserialize_struct<V>(
@@ -289,6 +302,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_enum: unimplmented");
         unimplemented!()
     }
 
@@ -296,6 +310,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_identifier: unimplmented");
         unimplemented!()
     }
 
@@ -303,6 +318,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_ignored_any: unimplmented");
         unimplemented!()
     }
 }
@@ -348,5 +364,76 @@ impl<'de, 'a> SeqAccess<'de> for JsArrayAccess<'a, 'de> {
         self.de.input = old_input;
 
         res
+    }
+}
+
+
+struct JsObjectAccess<'a, 'de: 'a> {
+    de: &'a mut Deserializer<'de>,
+    prop_names: Handle<'a, js::JsArray>,
+    idx: u32,
+    len: u32,
+}
+
+impl<'a, 'de> JsObjectAccess<'a, 'de> {
+    fn new(de: &'a mut Deserializer<'de>) -> LibResult<Self> {
+        let obj = de.input.check::<js::JsObject>()?;
+        let prop_names = obj.get_own_property_names(de.scope)?;
+        let len = prop_names.len();
+
+        Ok(JsObjectAccess {
+            de: de,
+            idx: 0,
+            prop_names,
+            len,
+        })
+    }
+}
+
+impl<'de, 'a> MapAccess<'de> for JsObjectAccess<'a, 'de> {
+    type Error = LibError;
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
+    where
+        K: DeserializeSeed<'de>,
+    {
+        if self.idx >= self.len {
+            return Ok(None);
+        }
+
+        let prop_name = self.prop_names.get(self.de.scope, self.idx)?;
+
+        let old_input = self.de.input;
+        self.de.input = prop_name;
+
+        let res = seed.deserialize(&mut *self.de).map(Some);
+
+        self.de.input = old_input;
+
+        res
+    }
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
+    where
+        V: DeserializeSeed<'de>,
+    {
+        if self.idx >= self.len {
+            return Err("index out of bounds")?;
+        }
+        let prop_name = self.prop_names.get(self.de.scope, self.idx)?;
+        let obj = self.de.input.check::<js::JsObject>()?;
+
+        let value = obj.get(self.de.scope, prop_name)?;
+
+
+        let old_input = self.de.input;
+        self.de.input = value;
+
+        let res = seed.deserialize(&mut *self.de)?;
+
+        self.de.input = old_input;
+
+        self.idx += 1;
+        Ok(res)
     }
 }
