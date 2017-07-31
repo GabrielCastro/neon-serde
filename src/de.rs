@@ -12,7 +12,6 @@ use neon::js::Object;
 use neon::js::Variant::*;
 use cast;
 
-use serde::Deserializer as _0;
 
 pub fn from_handle<'a, T>(
     input: Handle<'a, js::JsValue>,
@@ -66,8 +65,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Null(_) => visitor.visit_bool(false),
-            Undefined(_) => visitor.visit_bool(false),
+            Null(_) | Undefined(_)=> visitor.visit_bool(false),
             Boolean(val) => visitor.visit_bool(val.value()),
             Number(val) => {
                 let num = val.value();
@@ -228,8 +226,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Null(_) => visitor.visit_none(),
-            Undefined(_) => visitor.visit_none(),
+            Null(_) | Undefined(_) => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
     }
@@ -239,8 +236,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Null(_) => visitor.visit_unit(),
-            Undefined(_) => visitor.visit_unit(),
+            Null(_) | Undefined(_) => visitor.visit_unit(),
             _ => Err(ExpectingNull)?,
         }
     }
