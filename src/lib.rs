@@ -21,6 +21,25 @@ pub mod errors {
                 description("String too long for nodejs")
                 display("String too long for nodejs len: {}", len)
             }
+            UnableToCoerce(to_type: &'static str) {
+                description("Unable to coerce")
+                display("Unable to coerce value to type: {}", to_type)
+            }
+            EmptyString {
+                description("EmptyString")
+                display("EmptyString")
+            }
+            StringTooLongForChar(len: usize) {
+                description("String too long to be a char")
+                display("String too long to be a char expected len: 1 got len: {}", len)
+            }
+            ExpectingNull
+            InvalidKeyType
+            ArrayIndexOutOfBounds(index: u32, length: u32) {
+                description("ArrayIndexOutOfBounds")
+                display("ArrayIndexOutOfBounds: attempt to access ({}) size: ({})", index, length)
+            }
+
         }
         foreign_links {
             Js(neon::vm::Throw);

@@ -1,11 +1,12 @@
 use serde;
 use errors::Result as LibResult;
 use errors::Error as LibError;
+use errors::ErrorKind::*;
 use serde::de::Visitor;
 use neon::mem::Handle;
 use neon::scope::{RootScope, Scope};
 use neon::js;
-use neon::js::binary::JsBuffer;
+
 use serde::de::{MapAccess, DeserializeSeed, SeqAccess};
 use neon::js::Object;
 use neon::js::Variant::*;
@@ -72,7 +73,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
                 let num = val.value();
                 visitor.visit_bool(num != 0.0)
             }
-            _ => Err("type cannot be made into bool")?
+            _ => Err(UnableToCoerce("type cannot be made into bool"))?,
         }
     }
 
@@ -176,13 +177,16 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
 
         let result = match chars.next() {
             Some(ch) => visitor.visit_char(ch),
-            None => Err("string too short")?,
+            None => Err(EmptyString)?,
         };
 
-        match chars.next() {
-            Some(_) => Err("string too long")?,
-            None => result
+        let num_left = chars.count();
+
+        if num_left > 0 {
+            Err(StringTooLongForChar(num_left + 1))?
         }
+
+        result
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -226,7 +230,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         match self.input.variant() {
             Null(_) => visitor.visit_none(),
             Undefined(_) => visitor.visit_none(),
-            _ => visitor.visit_some(self)
+            _ => visitor.visit_some(self),
         }
     }
 
@@ -237,7 +241,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         match self.input.variant() {
             Null(_) => visitor.visit_unit(),
             Undefined(_) => visitor.visit_unit(),
-            _ => Err("expected null")?
+            _ => Err(ExpectingNull)?,
         }
     }
 
@@ -328,7 +332,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         match self.input.variant() {
             String(val) => visitor.visit_string(val.value()),
             Number(val) => visitor.visit_f64(val.value()),
-            _ => Err("key is neither string nor number")?,
+            _ => Err(InvalidKeyType)?,
         }
     }
 
@@ -435,7 +439,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> MapAccess<'de> for JsObjectAccess<'a, 'de, S>
         V: DeserializeSeed<'de>,
     {
         if self.idx >= self.len {
-            return Err("index out of bounds")?;
+            return Err(ArrayIndexOutOfBounds(self.len, self.idx))?;
         }
         let prop_name = self.prop_names.get(self.de.scope, self.idx)?;
         let obj = self.de.input.check::<js::JsObject>()?;
