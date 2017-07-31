@@ -63,9 +63,13 @@ fn expect_hello_world(call: Call) -> JsResult<JsValue> {
     let scope = call.scope;
     let value = "hello world";
 
-    let arg0 = call.arguments.require(scope, 0).unwrap().check::<JsValue>().unwrap();
+    let arg0 = call.arguments
+        .require(scope, 0)
+        .unwrap()
+        .check::<JsValue>()
+        .unwrap();
 
-    let de_serialized :String = neon_serde::from_handle(arg0, scope).unwrap();
+    let de_serialized: String = neon_serde::from_handle(arg0, scope).unwrap();
     assert_eq!(value, &de_serialized);
 
     Ok(JsNull::new().upcast())
@@ -75,13 +79,13 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
     let scope = call.scope;
     let value = AnObjectTwo {
         a: 1,
-        b: vec![1,2],
-        c: "abc".into()
+        b: vec![1, 2],
+        c: "abc".into(),
     };
 
     let arg0 = call.arguments.require(scope, 0)?.check::<JsValue>()?;
 
-    let de_serialized :AnObjectTwo = neon_serde::from_handle(arg0, scope)?;
+    let de_serialized: AnObjectTwo = neon_serde::from_handle(arg0, scope)?;
     assert_eq!(value, de_serialized);
 
     Ok(JsNull::new().upcast())
@@ -89,11 +93,15 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
 
 fn expect_num_array(call: Call) -> JsResult<JsValue> {
     let scope = call.scope;
-    let value = vec![0,1,2,3];
+    let value = vec![0, 1, 2, 3];
 
-    let arg0 = call.arguments.require(scope, 0).unwrap().check::<JsValue>().unwrap();
+    let arg0 = call.arguments
+        .require(scope, 0)
+        .unwrap()
+        .check::<JsValue>()
+        .unwrap();
 
-    let de_serialized :Vec<i32> = neon_serde::from_handle(arg0, scope).unwrap();
+    let de_serialized: Vec<i32> = neon_serde::from_handle(arg0, scope).unwrap();
     assert_eq!(value, de_serialized);
 
     Ok(JsNull::new().upcast())

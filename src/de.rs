@@ -47,10 +47,16 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         match self.input.variant() {
+            Undefined(_) => visitor.visit_none(),
             Null(_) => visitor.visit_unit(),
+            Boolean(val) => visitor.visit_bool(val.value()),
             String(val) => visitor.visit_string("A".into()),
+            Integer(val) => visitor.visit_i64(val.value()), // TO is u32 or i32,
+            Number(val) => visitor.visit_f64(val.value()),
+            Array(val) => self.deserialize_seq(visitor),
+            Object(val) => self.deserialize_map(visitor),
             _ => {
-                eprintln!("deserialize_any: unimplmented");
+                println!("deserialize_any: unimplmented");
                 unimplemented!()
             }
         }
@@ -69,6 +75,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
                 visitor.visit_bool(num != 0.0)
             }
             _ => {
+                // force a type error since above should have matched
                 self.input.check::<js::JsNumber>()?;
                 unreachable!();
             }
@@ -169,16 +176,25 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_char: unimplmented");
-        unimplemented!()
+        let input_str = self.input.check::<js::JsString>()?;
+        let input_string = input_str.value();
+        if input_string.len() != 1 {
+            Err("string len not 1")?
+        }
+        let ch = input_string.chars().next();
+        match ch {
+            Some(ch) => visitor.visit_char(ch),
+            None => unreachable!(),
+        }
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_str: unimplmented");
-        unimplemented!()
+        let input_str = self.input.check::<js::JsString>()?;
+        let input_string = input_str.value();
+        visitor.visit_string(input_string)
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -253,12 +269,11 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_seq(JsArrayAccess::new(&mut self)?)
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(mut self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_tuple: unimplmented");
-        unimplemented!()
+        visitor.visit_seq(JsArrayAccess::new(&mut self)?)
     }
 
     fn deserialize_tuple_struct<V>(
@@ -313,9 +328,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
         match self.input.variant() {
             String(val) => visitor.visit_string(val.value()),
             Number(val) => visitor.visit_f64(val.value()),
-            _ => {
-                Err("key is neither string nor number")?
-            }
+            _ => Err("key is neither string nor number")?,
         }
     }
 
