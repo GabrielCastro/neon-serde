@@ -41,7 +41,9 @@ describe('all values', () => {
         native.expect_obj({
             a: 1,
             b: [1, 2],
-            c: "abc"
+            c: "abc",
+            d: false,
+            e: null
         });
     });
 

@@ -23,6 +23,8 @@ struct AnObjectTwo {
     a: u32,
     b: Vec<i64>,
     c: String,
+    d: Option<bool>,
+    e: Option<bool>,
 }
 
 
@@ -81,6 +83,8 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
         a: 1,
         b: vec![1, 2],
         c: "abc".into(),
+        d: Some(false),
+        e: None
     };
 
     let arg0 = call.arguments.require(scope, 0)?.check::<JsValue>()?;
@@ -114,7 +118,7 @@ macro_rules! reg_func {
                 match $name(call) {
                     Ok(v) => Ok(v),
                     Err(err) => {
-                        println!("ERROR HERE: {:?}", err.backtrace());
+                        println!("{:?}", err);
                         Err(err.into())
                     }
                 }

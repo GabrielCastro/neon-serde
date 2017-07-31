@@ -226,16 +226,22 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_option: unimplmented");
-        unimplemented!()
+        match self.input.variant() {
+            Null(_) => visitor.visit_none(),
+            Undefined(_) => visitor.visit_none(),
+            _ => visitor.visit_some(self)
+        }
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_unit: unimplmented");
-        unimplemented!()
+        match self.input.variant() {
+            Null(_) => visitor.visit_unit(),
+            Undefined(_) => visitor.visit_unit(),
+            _ => self.deserialize_any(visitor)
+        }
     }
 
     fn deserialize_unit_struct<V>(
