@@ -46,7 +46,10 @@ describe('all values', () => {
             e: null,
             f: undefined,
             g: [9, false, "efg"],
-            h: '\uD83E\uDD37'
+            h: '\uD83E\uDD37',
+            i: "Empty",
+            j: {Tuple: [27, "hij"]},
+            k: {Struct: { a: 128, b: [9, 8, 7]}}
         });
     });
 

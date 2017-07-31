@@ -34,7 +34,10 @@ pub mod errors {
                 display("String too long to be a char expected len: 1 got len: {}", len)
             }
             ExpectingNull
-            InvalidKeyType
+            InvalidKeyType(key: String) {
+                description("InvalidKeyType")
+                display("key: '{}'", key)
+            }
             ArrayIndexOutOfBounds(index: u32, length: u32) {
                 description("ArrayIndexOutOfBounds")
                 display("ArrayIndexOutOfBounds: attempt to access ({}) size: ({})", index, length)

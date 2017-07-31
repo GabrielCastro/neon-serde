@@ -6,11 +6,14 @@ use serde::de::Visitor;
 use neon::mem::Handle;
 use neon::scope::{RootScope, Scope};
 use neon::js;
+use neon::js::Value;
+use std::string::String;
 
-use serde::de::{MapAccess, DeserializeSeed, SeqAccess};
+use serde::de::{MapAccess, DeserializeSeed, SeqAccess, EnumAccess, VariantAccess};
 use neon::js::Object;
 use neon::js::Variant::*;
 use cast;
+use serde::Deserializer as __0;
 
 
 pub fn from_handle<'a, T>(
@@ -65,7 +68,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Null(_) | Undefined(_)=> visitor.visit_bool(false),
+            Null(_) | Undefined(_) => visitor.visit_bool(false),
             Boolean(val) => visitor.visit_bool(val.value()),
             Number(val) => {
                 let num = val.value();
@@ -317,8 +320,29 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_enum: unimplmented");
-        unimplemented!()
+        use serde::de::IntoDeserializer;
+        match self.input.variant() {
+            String(val) => visitor.visit_enum(val.value().into_deserializer()),
+            Object(val) => {
+                let prop_names = val.get_own_property_names(self.scope)?;
+                let len = prop_names.len();
+                if len != 1 {
+                    Err(InvalidKeyType(
+                        format!("object key with {} properties", len),
+                    ))?
+                }
+                let key = prop_names.get(self.scope, 0)?;
+                let key_str = key.to_string(self.scope)?.value();
+
+                let enum_value = val.get(self.scope, key)?;
+                let res = visitor.visit_enum(JsEnumAccess::new(self, key_str, enum_value)?);
+                res
+            }
+            _ => {
+                let m = self.input.to_string(self.scope)?.value();
+                Err(InvalidKeyType(m))?
+            }
+        }
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -328,7 +352,22 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         match self.input.variant() {
             String(val) => visitor.visit_string(val.value()),
             Number(val) => visitor.visit_f64(val.value()),
-            _ => Err(InvalidKeyType)?,
+            Object(val) => {
+                let prop_names = val.get_own_property_names(self.scope)?;
+                let len = prop_names.len();
+                if len != 1 {
+                    Err(InvalidKeyType(
+                        format!("object key with {} properties", len),
+                    ))?
+                }
+                let key = prop_names.get(self.scope, 0)?;
+                let key_str = key.to_string(self.scope)?.value();
+                visitor.visit_string(key_str)
+            }
+            _ => {
+                let m = self.input.to_string(self.scope)?.value();
+                Err(InvalidKeyType(m))?
+            }
         }
     }
 
@@ -452,5 +491,81 @@ impl<'de, 'a, S: 'de + Scope<'de>> MapAccess<'de> for JsObjectAccess<'a, 'de, S>
 
         self.idx += 1;
         Ok(res)
+    }
+}
+
+struct JsEnumAccess<'a, 'de: 'a, S: 'de + Scope<'de>> {
+    de: &'a mut Deserializer<'de, S>,
+    key: String,
+    value: Handle<'de, js::JsValue>,
+}
+
+impl<'a, 'de, S: 'de + Scope<'de>> JsEnumAccess<'a, 'de, S> {
+    fn new(
+        de: &'a mut Deserializer<'de, S>,
+        key: String,
+        value: Handle<'de, js::JsValue>,
+    ) -> LibResult<Self> {
+        Ok(JsEnumAccess { de, key, value })
+    }
+}
+
+impl<'a, 'de, S: 'de + Scope<'de>> EnumAccess<'de> for JsEnumAccess<'a, 'de, S> {
+    type Error = LibError;
+    type Variant = Self;
+
+    fn variant_seed<V>(mut self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
+    where
+        V: DeserializeSeed<'de>,
+    {
+        let val = seed.deserialize(&mut *self.de)?;
+        let access = self;
+        Ok((val, access))
+    }
+}
+
+
+impl<'a, 'de, S: 'de + Scope<'de>> VariantAccess<'de> for JsEnumAccess<'a, 'de, S> {
+    type Error = LibError;
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        let old = self.de.input;
+        self.de.input = self.value;
+        let res = seed.deserialize(&mut *self.de);
+        self.de.input = old;
+        res
+    }
+
+    fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        let old = self.de.input;
+        self.de.input = self.value;
+        let res = self.de.deserialize_seq(visitor);
+        self.de.input = old;
+        res
+    }
+
+    fn struct_variant<V>(
+        self,
+        fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        let old = self.de.input;
+        self.de.input = self.value;
+        let res = self.de.deserialize_map(visitor);
+        self.de.input = old;
+        res
     }
 }

@@ -21,7 +21,15 @@ struct AnObject<'a> {
 #[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
 struct Inner;
 #[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
-struct Inner2(i32,bool,String);
+struct Inner2(i32, bool, String);
+
+#[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
+enum TypeEnum {
+    Empty,
+    Tuple(u32, String),
+    Struct { a: u8, b: Vec<u8> },
+}
+
 
 #[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
 struct AnObjectTwo {
@@ -32,7 +40,10 @@ struct AnObjectTwo {
     e: Option<bool>,
     f: Inner,
     g: Inner2,
-    h: char
+    h: char,
+    i: TypeEnum,
+    j: TypeEnum,
+    k: TypeEnum,
 }
 
 
@@ -95,7 +106,13 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
         e: None,
         f: Inner,
         g: Inner2(9, false, "efg".into()),
-        h: '🤷'
+        h: '🤷',
+        i: TypeEnum::Empty,
+        j: TypeEnum::Tuple(27, "hij".into()),
+        k: TypeEnum::Struct {
+            a: 128,
+            b: vec![9, 8, 7],
+        },
     };
 
     let arg0 = call.arguments.require(scope, 0)?.check::<JsValue>()?;
