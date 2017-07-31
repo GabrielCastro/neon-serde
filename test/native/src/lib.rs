@@ -19,12 +19,20 @@ struct AnObject<'a> {
 }
 
 #[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
+struct Inner;
+#[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
+struct Inner2(i32,bool,String);
+
+#[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
 struct AnObjectTwo {
     a: u32,
     b: Vec<i64>,
     c: String,
     d: Option<bool>,
     e: Option<bool>,
+    f: Inner,
+    g: Inner2,
+    h: char
 }
 
 
@@ -84,7 +92,10 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
         b: vec![1, 2],
         c: "abc".into(),
         d: Some(false),
-        e: None
+        e: None,
+        f: Inner,
+        g: Inner2(9, false, "efg".into()),
+        h: '🤷'
     };
 
     let arg0 = call.arguments.require(scope, 0)?.check::<JsValue>()?;

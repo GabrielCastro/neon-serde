@@ -74,11 +74,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
                 let num = val.value();
                 visitor.visit_bool(num != 0.0)
             }
-            _ => {
-                // force a type error since above should have matched
-                self.input.check::<js::JsNumber>()?;
-                unreachable!();
-            }
+            _ => Err("type cannot be made into bool")?
         }
     }
 
@@ -240,7 +236,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
         match self.input.variant() {
             Null(_) => visitor.visit_unit(),
             Undefined(_) => visitor.visit_unit(),
-            _ => self.deserialize_any(visitor)
+            _ => Err("expected null")?
         }
     }
 
@@ -252,8 +248,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_unit_struct: unimplmented");
-        unimplemented!()
+        self.deserialize_unit(visitor)
     }
 
     fn deserialize_newtype_struct<V>(
@@ -264,8 +259,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_newtype_struct: unimplmented");
-        unimplemented!()
+        visitor.visit_newtype_struct(self)
     }
 
     fn deserialize_seq<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
@@ -291,8 +285,7 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_tuple_struct: unimplmented");
-        unimplemented!()
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_map<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>

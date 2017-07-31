@@ -43,7 +43,10 @@ describe('all values', () => {
             b: [1, 2],
             c: "abc",
             d: false,
-            e: null
+            e: null,
+            f: undefined,
+            g: [9, false, "efg"],
+            h: '\uD83E\uDD37'
         });
     });
 
