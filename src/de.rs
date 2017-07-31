@@ -3,7 +3,7 @@ use errors::Result as LibResult;
 use errors::Error as LibError;
 use serde::de::Visitor;
 use neon::mem::Handle;
-use neon::scope::RootScope;
+use neon::scope::{RootScope, Scope};
 use neon::js;
 use neon::js::binary::JsBuffer;
 use serde::de::{MapAccess, DeserializeSeed, SeqAccess};
@@ -20,26 +20,24 @@ pub fn from_handle<'a, T>(
 where
     T: serde::Deserialize<'a> + ?Sized,
 {
-    let mut deserializer = Deserializer::new(input, scope);
+    let mut deserializer: Deserializer<RootScope<'a>> = Deserializer::new(input, scope);
     let t = T::deserialize(&mut deserializer)?;
     Ok(t)
 }
 
 
-pub struct Deserializer<'de> {
+pub struct Deserializer<'de, S: 'de + Scope<'de>> {
     input: Handle<'de, js::JsValue>,
-    scope: &'de mut RootScope<'de>,
+    scope: &'de mut S,
 }
 
-impl<'de> Deserializer<'de> {
-    fn new(input: Handle<'de, js::JsValue>, scope: &'de mut RootScope<'de>) -> Self {
+impl<'de, S: 'de + Scope<'de>> Deserializer<'de, S> {
+    fn new(input: Handle<'de, js::JsValue>, scope: &'de mut S) -> Self {
         Deserializer { input, scope }
     }
-
-    fn visit_js_string(&mut self, input: Handle<'de, js::JsString>) {}
 }
 
-impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
+impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Deserializer<'de, S> {
     type Error = LibError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -174,13 +172,16 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         let input_str = self.input.check::<js::JsString>()?;
         let input_string = input_str.value();
-        if input_string.len() != 1 {
-            Err("string len not 1")?
-        }
-        let ch = input_string.chars().next();
-        match ch {
+        let mut chars = input_string.chars();
+
+        let result = match chars.next() {
             Some(ch) => visitor.visit_char(ch),
-            None => unreachable!(),
+            None => Err("string too short")?,
+        };
+
+        match chars.next() {
+            Some(_) => Err("string too long")?,
+            None => result
         }
     }
 
@@ -340,14 +341,14 @@ impl<'de, 'a> serde::de::Deserializer<'de> for &'a mut Deserializer<'de> {
 }
 
 
-struct JsArrayAccess<'a, 'de: 'a> {
-    de: &'a mut Deserializer<'de>,
+struct JsArrayAccess<'a, 'de: 'a, S: 'de + Scope<'de>> {
+    de: &'a mut Deserializer<'de, S>,
     idx: u32,
     len: u32,
 }
 
-impl<'a, 'de> JsArrayAccess<'a, 'de> {
-    fn new(de: &'a mut Deserializer<'de>) -> LibResult<Self> {
+impl<'a, 'de, S: 'de + Scope<'de>> JsArrayAccess<'a, 'de, S> {
+    fn new(de: &'a mut Deserializer<'de, S>) -> LibResult<Self> {
         let len = de.input.check::<js::JsArray>()?.len();
         Ok(JsArrayAccess {
             de: de,
@@ -357,7 +358,7 @@ impl<'a, 'de> JsArrayAccess<'a, 'de> {
     }
 }
 
-impl<'de, 'a> SeqAccess<'de> for JsArrayAccess<'a, 'de> {
+impl<'de, 'a, S: 'de + Scope<'de>> SeqAccess<'de> for JsArrayAccess<'a, 'de, S> {
     type Error = LibError;
 
     fn next_element_seed<T>(&mut self, seed: T) -> LibResult<Option<T::Value>>
@@ -384,15 +385,15 @@ impl<'de, 'a> SeqAccess<'de> for JsArrayAccess<'a, 'de> {
 }
 
 
-struct JsObjectAccess<'a, 'de: 'a> {
-    de: &'a mut Deserializer<'de>,
+struct JsObjectAccess<'a, 'de: 'a, S: 'de + Scope<'de>> {
+    de: &'a mut Deserializer<'de, S>,
     prop_names: Handle<'a, js::JsArray>,
     idx: u32,
     len: u32,
 }
 
-impl<'a, 'de> JsObjectAccess<'a, 'de> {
-    fn new(de: &'a mut Deserializer<'de>) -> LibResult<Self> {
+impl<'a, 'de, S: 'de + Scope<'de>> JsObjectAccess<'a, 'de, S> {
+    fn new(de: &'a mut Deserializer<'de, S>) -> LibResult<Self> {
         let obj = de.input.check::<js::JsObject>()?;
         let prop_names = obj.get_own_property_names(de.scope)?;
         let len = prop_names.len();
@@ -406,7 +407,7 @@ impl<'a, 'de> JsObjectAccess<'a, 'de> {
     }
 }
 
-impl<'de, 'a> MapAccess<'de> for JsObjectAccess<'a, 'de> {
+impl<'de, 'a, S: 'de + Scope<'de>> MapAccess<'de> for JsObjectAccess<'a, 'de, S> {
     type Error = LibError;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
