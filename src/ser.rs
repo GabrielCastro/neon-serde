@@ -126,8 +126,12 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        // requires a js::Buffer type
-        unimplemented!()
+        let mut buff = js::binary::JsBuffer::new(self.scope, cast::u32(v.len())?)?;
+        use neon::vm::Lock;
+        buff.grab(|mut buff| {
+            buff.as_mut_slice().clone_from_slice(v)
+        });
+        Ok(buff.upcast())
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {

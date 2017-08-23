@@ -52,6 +52,11 @@ describe('all values', () => {
         });
     })
 
+    test('make_buff', () => {
+        const buff = new Buffer([255, 254, 253]);
+        expect(native.make_buff()).toEqual(buff);
+    });
+
     test('expect_hello_world', () => {
         native.expect_hello_world("hello world");
     });

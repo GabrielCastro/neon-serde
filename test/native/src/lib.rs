@@ -4,6 +4,7 @@ extern crate neon_serde;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_bytes;
 
 use neon::vm::{Call, JsResult};
 use neon::js::{JsNull, JsValue};
@@ -47,7 +48,6 @@ struct AnObjectTwo {
     m: Vec<u8>,
     o: TypeEnum
 }
-
 
 macro_rules! make_test {
     ($name:ident, $val:expr) => {
@@ -104,6 +104,13 @@ make_test!(make_object, {
     };
     value
 });
+
+const NUMBER_BYTES: &'static [u8] = &[255u8, 254, 253];
+
+make_test!(make_buff, {
+   serde_bytes::Bytes::new(NUMBER_BYTES)
+});
+
 
 fn expect_hello_world(call: Call) -> JsResult<JsValue> {
     let scope = call.scope;
@@ -184,6 +191,7 @@ register_module!(m, {
     m.export("make_num_32", make_num_32)?;
     m.export("make_str_hello", make_str_hello)?;
     m.export("make_num_array", make_num_array)?;
+    m.export("make_buff", make_buff)?;
     m.export("make_obj", make_obj)?;
     m.export("make_object", make_object)?;
     m.export("make_map", make_map)?;
