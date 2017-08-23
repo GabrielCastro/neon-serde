@@ -52,11 +52,10 @@ where
 }
 
 #[doc(hidden)]
-pub struct MapSerializer<'a, S>
-where
-    S: 'a + Scope<'a>,
-{
-    scope: &'a mut S,
+pub struct MapSerializer<'a, 'b: 'a> {
+    scope: &'a mut RootScope<'b>,
+    object: Handle<'b, js::JsObject>,
+    key_holder: Handle<'b, js::JsObject>,
 }
 
 #[doc(hidden)]
@@ -81,7 +80,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     type SerializeTuple = TupleSerializer<'a, RootScope<'a>>;
     type SerializeTupleStruct = TupleStructSerializer<'a, RootScope<'a>>;
     type SerializeTupleVariant = TupleVariantSerializer<'a, RootScope<'a>>;
-    type SerializeMap = MapSerializer<'a, RootScope<'a>>;
+    type SerializeMap = MapSerializer<'a, 'b>;
     type SerializeStruct = StructSerializer<'a, 'b>;
     type SerializeStructVariant = StructVariantSerializer<'a, RootScope<'a>>;
 
@@ -228,7 +227,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        unimplemented!()
+        Ok(MapSerializer::new(self.scope))
     }
 
     fn serialize_struct(
@@ -325,26 +324,44 @@ impl<'a, S: 'a + Scope<'a>> ser::SerializeTupleVariant for TupleVariantSerialize
     type Error = Error;
 }
 
-impl<'a, S: 'a + Scope<'a>> ser::SerializeMap for MapSerializer<'a, S> {
+impl<'a, 'b> MapSerializer<'a, 'b> {
+    fn new(scope: &'a mut RootScope<'b>) -> Self {
+        let object = js::JsObject::new(scope);
+        let key_holder = js::JsObject::new(scope);
+        MapSerializer {
+            scope,
+            object,
+            key_holder,
+        }
+    }
+}
+
+impl<'a, 'b> ser::SerializeMap for MapSerializer<'a, 'b> {
+    type Ok = Handle<'a, js::JsValue>;
+    type Error = Error;
+
     fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        unimplemented!()
+        let key = to_value(key, &mut *self.scope)?;
+        self.key_holder.set("key", key)?;
+        Ok(())
     }
 
     fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        unimplemented!()
+        let key: Handle<js::JsValue> = self.key_holder.get(&mut *self.scope, "key")?;
+        let value_obj = to_value(value, &mut *self.scope)?;
+        self.object.set(key, value_obj)?;
+        Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        Ok(self.object.upcast())
     }
-    type Ok = Handle<'a, js::JsValue>;
-    type Error = Error;
 }
 
 impl<'a, 'b> StructSerializer<'a, 'b> {

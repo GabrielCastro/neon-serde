@@ -25,7 +25,7 @@ describe('all values', () => {
         });
     });
 
-    test.skip('value map', () => {
+    test('value map', () => {
         expect(native.make_map()).toEqual({
             'a': 1,
             'b': 2,

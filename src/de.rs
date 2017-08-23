@@ -7,9 +7,8 @@ use neon::mem::Handle;
 use neon::scope::{RootScope, Scope};
 use neon::js;
 use neon::js::Value;
-use std::string::String;
 
-use serde::de::{MapAccess, DeserializeSeed, SeqAccess, EnumAccess, VariantAccess};
+use serde::de::{DeserializeSeed, EnumAccess, MapAccess, SeqAccess, VariantAccess};
 use neon::js::Object;
 use neon::js::Variant::*;
 use cast;
@@ -332,10 +331,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
                     ))?
                 }
                 let key = prop_names.get(self.scope, 0)?;
-                let key_str = key.to_string(self.scope)?.value();
-
                 let enum_value = val.get(self.scope, key)?;
-                let res = visitor.visit_enum(JsEnumAccess::new(self, key_str, enum_value)?);
+                let res = visitor.visit_enum(JsEnumAccess::new(self, enum_value)?);
                 res
             }
             _ => {
@@ -496,17 +493,12 @@ impl<'de, 'a, S: 'de + Scope<'de>> MapAccess<'de> for JsObjectAccess<'a, 'de, S>
 
 struct JsEnumAccess<'a, 'de: 'a, S: 'de + Scope<'de>> {
     de: &'a mut Deserializer<'de, S>,
-    key: String,
     value: Handle<'de, js::JsValue>,
 }
 
 impl<'a, 'de, S: 'de + Scope<'de>> JsEnumAccess<'a, 'de, S> {
-    fn new(
-        de: &'a mut Deserializer<'de, S>,
-        key: String,
-        value: Handle<'de, js::JsValue>,
-    ) -> LibResult<Self> {
-        Ok(JsEnumAccess { de, key, value })
+    fn new(de: &'a mut Deserializer<'de, S>, value: Handle<'de, js::JsValue>) -> LibResult<Self> {
+        Ok(JsEnumAccess { de, value })
     }
 }
 
