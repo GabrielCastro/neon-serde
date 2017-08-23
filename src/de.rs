@@ -50,7 +50,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
             Undefined(_) => visitor.visit_none(),
             Null(_) => visitor.visit_unit(),
             Boolean(val) => visitor.visit_bool(val.value()),
-            String(val) => visitor.visit_string("A".into()),
+            String(val) => visitor.visit_string(val.value()),
             Integer(val) => visitor.visit_i64(val.value()), // TO is u32 or i32,
             Number(val) => visitor.visit_f64(val.value()),
             Array(val) => self.deserialize_seq(visitor),

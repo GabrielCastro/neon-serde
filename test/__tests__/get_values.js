@@ -33,6 +33,24 @@ describe('all values', () => {
         });
     });
 
+    test('make object', () => {
+        expect(native.make_object()).toEqual({
+            a: 1,
+            b: [1, 2],
+            c: "abc",
+            d: false,
+            e: null,
+            f: null,
+            g: [9, false, "efg"],
+            h: '\uD83E\uDD37',
+            i: "Empty",
+            j: {Tuple: [27, "hij"]},
+            k: {Struct: { a: 128, b: [9, 8, 7]}},
+            l: "jkl",
+            m: [0,1,2,3,4]
+        });
+    })
+
     test('expect_hello_world', () => {
         native.expect_hello_world("hello world");
     });

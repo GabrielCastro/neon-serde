@@ -7,6 +7,7 @@ use neon::mem::Handle;
 use neon::scope::Scope;
 use neon::scope::RootScope;
 use neon::js::Object;
+use cast;
 
 pub fn to_value<'value, 'shandle, 'scope, V: Serialize + ?Sized>(
     value: &'value V,
@@ -28,27 +29,10 @@ pub struct ArraySerializer<'a, 'b: 'a> {
 }
 
 #[doc(hidden)]
-pub struct TupleSerializer<'a, S>
-where
-    S: 'a + Scope<'a>,
+pub struct TupleVariantSerializer<'a, 'b: 'a>
 {
-    scope: &'a mut S,
-}
-
-#[doc(hidden)]
-pub struct TupleStructSerializer<'a, S>
-where
-    S: 'a + Scope<'a>,
-{
-    scope: &'a mut S,
-}
-
-#[doc(hidden)]
-pub struct TupleVariantSerializer<'a, S>
-where
-    S: 'a + Scope<'a>,
-{
-    scope: &'a mut S,
+    outter_object: Handle<'b, js::JsObject>,
+    inner: ArraySerializer<'a, 'b>
 }
 
 #[doc(hidden)]
@@ -65,11 +49,9 @@ pub struct StructSerializer<'a, 'b: 'a> {
 }
 
 #[doc(hidden)]
-pub struct StructVariantSerializer<'a, S>
-where
-    S: 'a + Scope<'a>,
-{
-    scope: &'a mut S,
+pub struct StructVariantSerializer<'a, 'b: 'a> {
+    outter_object: Handle<'b, js::JsObject>,
+    inner: StructSerializer<'a, 'b>
 }
 
 impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
@@ -77,12 +59,12 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     type Error = Error;
 
     type SerializeSeq = ArraySerializer<'a, 'b>;
-    type SerializeTuple = TupleSerializer<'a, RootScope<'a>>;
-    type SerializeTupleStruct = TupleStructSerializer<'a, RootScope<'a>>;
-    type SerializeTupleVariant = TupleVariantSerializer<'a, RootScope<'a>>;
+    type SerializeTuple = ArraySerializer<'a, 'b>;
+    type SerializeTupleStruct = ArraySerializer<'a, 'b>;
+    type SerializeTupleVariant = TupleVariantSerializer<'a, 'b>;
     type SerializeMap = MapSerializer<'a, 'b>;
     type SerializeStruct = StructSerializer<'a, 'b>;
-    type SerializeStructVariant = StructVariantSerializer<'a, RootScope<'a>>;
+    type SerializeStructVariant = StructVariantSerializer<'a, 'b>;
 
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -130,10 +112,10 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        let mut b = [0; 2];
+        let mut b = [0; 4];
         let result = v.encode_utf8(&mut b);
         let js_str =
-            js::JsString::new(self.scope, result).ok_or_else(|| ErrorKind::StringTooLong(2))?;
+            js::JsString::new(self.scope, result).ok_or_else(|| ErrorKind::StringTooLong(4))?;
         Ok(js_str.upcast())
     }
 
@@ -149,7 +131,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsUndefined::new().upcast())
+        Ok(js::JsNull::new().upcast())
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
@@ -205,7 +187,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        unimplemented!()
+        Ok(ArraySerializer::new(self.scope))
     }
 
     fn serialize_tuple_struct(
@@ -213,7 +195,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        unimplemented!()
+        Ok(ArraySerializer::new(self.scope))
     }
 
     fn serialize_tuple_variant(
@@ -223,7 +205,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        unimplemented!()
+        TupleVariantSerializer::new(self.scope, variant)
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
@@ -245,7 +227,8 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        unimplemented!()
+
+        StructVariantSerializer::new(self.scope, variant)
     }
 }
 
@@ -277,51 +260,69 @@ impl<'a, 'b: 'a> ser::SerializeSeq for ArraySerializer<'a, 'b> {
         Ok(self.array.upcast())
     }
 }
+impl<'a, 'b: 'a> ser::SerializeTuple for ArraySerializer<'a, 'b>  {
 
-impl<'a, S: 'a + Scope<'a>> ser::SerializeTuple for TupleSerializer<'a, S> {
     type Ok = Handle<'a, js::JsValue>;
     type Error = Error;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
-        unimplemented!()
+        ser::SerializeSeq::serialize_element(self, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        ser::SerializeSeq::end(self)
     }
 }
 
-impl<'a, S: 'a + Scope<'a>> ser::SerializeTupleStruct for TupleStructSerializer<'a, S> {
+impl<'a, 'b: 'a> ser::SerializeTupleStruct for ArraySerializer<'a, 'b>  {
+    type Ok = Handle<'a, js::JsValue>;
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: Serialize,
+    {
+        ser::SerializeSeq::serialize_element(self, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        ser::SerializeSeq::end(self)
+    }
+}
+
+impl<'a, 'b> TupleVariantSerializer<'a, 'b> {
+    fn new(scope: &'a mut RootScope<'b>, key: &'static str) -> LibResult<Self> {
+        let inner_array = js::JsArray::new(scope, 0);
+        let outter_object = js::JsObject::new(scope);
+        outter_object.set(key, inner_array)?;
+        Ok(TupleVariantSerializer {
+            outter_object,
+            inner: ArraySerializer {
+                scope,
+                array: inner_array
+            }
+        })
+    }
+}
+
+impl<'a, 'b> ser::SerializeTupleVariant for TupleVariantSerializer<'a, 'b> {
+    type Ok = Handle<'a, js::JsValue>;
+    type Error = Error;
+
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        unimplemented!()
+        use serde::ser::SerializeSeq;
+        self.inner.serialize_element(value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        Ok(self.outter_object.upcast())
     }
-    type Ok = Handle<'a, js::JsValue>;
-    type Error = Error;
-}
-
-impl<'a, S: 'a + Scope<'a>> ser::SerializeTupleVariant for TupleVariantSerializer<'a, S> {
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-    where
-        T: Serialize,
-    {
-        unimplemented!()
-    }
-
-    fn end(self) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
-    }
-    type Ok = Handle<'a, js::JsValue>;
-    type Error = Error;
 }
 
 impl<'a, 'b> MapSerializer<'a, 'b> {
@@ -393,7 +394,25 @@ impl<'a, 'b> ser::SerializeStruct for StructSerializer<'a, 'b> {
     }
 }
 
-impl<'a, S: 'a + Scope<'a>> ser::SerializeStructVariant for StructVariantSerializer<'a, S> {
+impl<'a, 'b> StructVariantSerializer<'a, 'b> {
+    fn new(scope: &'a mut RootScope<'b>, key: &'static str) -> LibResult<Self> {
+        let inner_object = js::JsObject::new(scope);
+        let outter_object = js::JsObject::new(scope);
+        outter_object.set(key, inner_object)?;
+        Ok(StructVariantSerializer {
+            outter_object,
+            inner: StructSerializer {
+                scope,
+                object: inner_object
+            }
+        })
+    }
+}
+
+impl<'a, 'b> ser::SerializeStructVariant for StructVariantSerializer<'a, 'b> {
+    type Ok = Handle<'a, js::JsValue>;
+    type Error = Error;
+
     fn serialize_field<T: ?Sized>(
         &mut self,
         key: &'static str,
@@ -402,12 +421,12 @@ impl<'a, S: 'a + Scope<'a>> ser::SerializeStructVariant for StructVariantSeriali
     where
         T: Serialize,
     {
-        unimplemented!()
+        use serde::ser::SerializeStruct;
+        self.inner.serialize_field(key, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+        Ok(self.outter_object.upcast())
     }
-    type Ok = Handle<'a, js::JsValue>;
-    type Error = Error;
+
 }

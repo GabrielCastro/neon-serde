@@ -80,6 +80,28 @@ make_test!(make_map, {
     map
 });
 
+make_test!(make_object, {
+    let value = AnObjectTwo {
+        a: 1,
+        b: vec![1, 2],
+        c: "abc".into(),
+        d: Some(false),
+        e: None,
+        f: Inner,
+        g: Inner2(9, false, "efg".into()),
+        h: '🤷',
+        i: TypeEnum::Empty,
+        j: TypeEnum::Tuple(27, "hij".into()),
+        k: TypeEnum::Struct {
+            a: 128,
+            b: vec![9, 8, 7],
+        },
+        l: "jkl".into(),
+        m: vec![0, 1, 2, 3, 4],
+    };
+    value
+});
+
 fn expect_hello_world(call: Call) -> JsResult<JsValue> {
     let scope = call.scope;
     let value = "hello world";
@@ -159,6 +181,7 @@ register_module!(m, {
     m.export("make_str_hello", make_str_hello)?;
     m.export("make_num_array", make_num_array)?;
     m.export("make_obj", make_obj)?;
+    m.export("make_object", make_object)?;
     m.export("make_map", make_map)?;
     m.export("expect_hello_world", reg_func!(expect_hello_world))?;
     m.export("expect_obj", reg_func!(expect_obj))?;
