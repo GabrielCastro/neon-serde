@@ -133,17 +133,14 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
         let mut b = [0; 2];
         let result = v.encode_utf8(&mut b);
-        let js_str = js::JsString::new(self.scope, result).ok_or_else(|| {
-            ErrorKind::StringTooLong(2)
-        })?;
+        let js_str =
+            js::JsString::new(self.scope, result).ok_or_else(|| ErrorKind::StringTooLong(2))?;
         Ok(js_str.upcast())
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
         let len = v.len();
-        let js_str = js::JsString::new(self.scope, v).ok_or_else(|| {
-            ErrorKind::StringTooLong(len)
-        })?;
+        let js_str = js::JsString::new(self.scope, v).ok_or_else(|| ErrorKind::StringTooLong(len))?;
         Ok(js_str.upcast())
     }
 

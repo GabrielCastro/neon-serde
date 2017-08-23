@@ -1,16 +1,16 @@
 #![allow(unused_variables)]
 #![deny(unused_mut)]
-extern crate serde;
+extern crate cast;
 #[macro_use]
 extern crate error_chain;
 extern crate neon;
-extern crate cast;
+extern crate serde;
 
 pub mod ser;
 pub mod de;
 
 pub mod errors {
-    use serde::{ser, de};
+    use serde::{de, ser};
     use std::fmt::Display;
     use std::convert::From;
     use neon;
@@ -40,9 +40,12 @@ pub mod errors {
             }
             ArrayIndexOutOfBounds(index: u32, length: u32) {
                 description("ArrayIndexOutOfBounds")
-                display("ArrayIndexOutOfBounds: attempt to access ({}) size: ({})", index, length)
+                display(
+                    "ArrayIndexOutOfBounds: attempt to access ({}) size: ({})",
+                    index,
+                    length
+                )
             }
-
         }
         foreign_links {
             Js(neon::vm::Throw);

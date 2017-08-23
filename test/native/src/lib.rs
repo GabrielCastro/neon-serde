@@ -1,21 +1,19 @@
 #[macro_use]
 extern crate neon;
 extern crate neon_serde;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 
 use neon::vm::{Call, JsResult};
-use neon::js::{JsValue, JsNull, JsString};
-use neon::scope::Scope;
-use std::rc::Rc;
+use neon::js::{JsNull, JsValue};
 use neon::mem::Handle;
 
 #[derive(Serialize, Debug, Deserialize)]
-struct AnObject<'a> {
+struct AnObject {
     a: u32,
     b: Vec<f64>,
-    c: &'a str,
+    c: String,
 }
 
 #[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
@@ -44,6 +42,8 @@ struct AnObjectTwo {
     i: TypeEnum,
     j: TypeEnum,
     k: TypeEnum,
+    l: String,
+    m: Vec<u8>,
 }
 
 
@@ -68,7 +68,7 @@ make_test!(
     AnObject {
         a: 1,
         b: vec![0.1f64, 1.1, 2.2, 3.3],
-        c: "Hi",
+        c: "Hi".into(),
     }
 );
 make_test!(make_map, {
@@ -97,6 +97,7 @@ fn expect_hello_world(call: Call) -> JsResult<JsValue> {
 }
 
 fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
+    eprintln!("expect_obj");
     let scope = call.scope;
     let value = AnObjectTwo {
         a: 1,
@@ -113,6 +114,8 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
             a: 128,
             b: vec![9, 8, 7],
         },
+        l: "jkl".into(),
+        m: vec![0, 1, 2, 3, 4],
     };
 
     let arg0 = call.arguments.require(scope, 0)?.check::<JsValue>()?;
@@ -143,13 +146,7 @@ macro_rules! reg_func {
     ($name:ident) => {
         {
             let outter: fn(call: Call) -> JsResult<JsValue> = |call| {
-                match $name(call) {
-                    Ok(v) => Ok(v),
-                    Err(err) => {
-                        println!("{:?}", err);
-                        Err(err.into())
-                    }
-                }
+                Ok($name(call)?)
             };
             outter
         }
@@ -163,8 +160,8 @@ register_module!(m, {
     m.export("make_num_array", make_num_array)?;
     m.export("make_obj", make_obj)?;
     m.export("make_map", make_map)?;
-    m.export("expect_hello_world", expect_hello_world)?;
+    m.export("expect_hello_world", reg_func!(expect_hello_world))?;
     m.export("expect_obj", reg_func!(expect_obj))?;
-    m.export("expect_num_array", expect_num_array)?;
+    m.export("expect_num_array", reg_func!(expect_num_array))?;
     Ok(())
 });
