@@ -51,14 +51,16 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
             Null(_) => visitor.visit_unit(),
             Boolean(val) => visitor.visit_bool(val.value()),
             String(val) => visitor.visit_string(val.value()),
-            Integer(val) => visitor.visit_i64(val.value()), // TO is u32 or i32,
+            Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
             Number(val) => visitor.visit_f64(val.value()),
             Array(val) => self.deserialize_seq(visitor),
             Object(val) => self.deserialize_map(visitor),
-            _ => {
-                println!("deserialize_any: unimplmented");
-                unimplemented!()
-            }
+            Function(_) => {
+                bail!(NotImplemented("unimplemented Deserializer::Deserializer(Function)"));
+            },
+            Other(_) => {
+                bail!(NotImplemented("unimplemented Deserializer::Deserializer(Other)"));
+            },
         }
     }
 

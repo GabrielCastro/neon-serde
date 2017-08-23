@@ -46,6 +46,10 @@ pub mod errors {
                     length
                 )
             }
+            NotImplemented(name: &'static str) {
+                description("Not Implemented")
+                display("Not Implemented: '{}'", name)
+            }
         }
         foreign_links {
             Js(neon::vm::Throw);
@@ -67,6 +71,7 @@ pub mod errors {
 
     impl From<Error> for neon::vm::Throw {
         fn from(err: Error) -> Self {
+            eprintln!("{:?}", err);
             ::neon::vm::Throw
         }
     }

@@ -52,11 +52,15 @@ struct AnObjectTwo {
 macro_rules! make_test {
     ($name:ident, $val:expr) => {
         fn $name(call: Call) -> JsResult<JsValue> {
-            let scope = call.scope;
-            let value = $val;
+            fn inner(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
+                let scope = call.scope;
+                let value = $val;
 
-            let handle = neon_serde::to_value(&value, scope)?;
-            Ok(handle)
+                let handle = neon_serde::to_value(&value, scope)?;
+                Ok(handle)
+            }
+
+            Ok(inner(call).unwrap())
         }
     };
 }
@@ -112,17 +116,14 @@ make_test!(make_buff, {
 });
 
 
-fn expect_hello_world(call: Call) -> JsResult<JsValue> {
+fn expect_hello_world(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
     let scope = call.scope;
     let value = "hello world";
-
     let arg0 = call.arguments
-        .require(scope, 0)
-        .unwrap()
-        .check::<JsValue>()
-        .unwrap();
+        .require(scope, 0)?
+        .check::<JsValue>()?;
 
-    let de_serialized: String = neon_serde::from_handle(arg0, scope).unwrap();
+    let de_serialized: String = neon_serde::from_handle(arg0, scope)?;
     assert_eq!(value, &de_serialized);
 
     Ok(JsNull::new().upcast())
@@ -159,35 +160,30 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
     Ok(JsNull::new().upcast())
 }
 
-fn expect_num_array(call: Call) -> JsResult<JsValue> {
+fn expect_num_array(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
     let scope = call.scope;
     let value = vec![0, 1, 2, 3];
 
     let arg0 = call.arguments
-        .require(scope, 0)
-        .unwrap()
-        .check::<JsValue>()
-        .unwrap();
+        .require(scope, 0)?
+        .check::<JsValue>()?;
 
-    let de_serialized: Vec<i32> = neon_serde::from_handle(arg0, scope).unwrap();
+    let de_serialized: Vec<i32> = neon_serde::from_handle(arg0, scope)?;
     assert_eq!(value, de_serialized);
 
     Ok(JsNull::new().upcast())
 }
 
-fn expect_buffer(call: Call) -> JsResult<JsValue> {
+fn expect_buffer(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
     let scope = call.scope;
     let value = serde_bytes::ByteBuf::from(vec![252u8, 251, 250]);
 
     let arg0 = call.arguments
-        .require(scope, 0)
-        .unwrap()
-        .check::<JsValue>()
-        .unwrap();
+        .require(scope, 0)?
+        .check::<JsValue>()?;
 
-    let de_serialized: serde_bytes::ByteBuf = neon_serde::from_handle(arg0, scope).unwrap();
+    let de_serialized: serde_bytes::ByteBuf = neon_serde::from_handle(arg0, scope)?;
     assert_eq!(value, de_serialized);
-
     Ok(JsNull::new().upcast())
 }
 
@@ -195,7 +191,8 @@ macro_rules! reg_func {
     ($name:ident) => {
         {
             let outter: fn(call: Call) -> JsResult<JsValue> = |call| {
-                Ok($name(call)?)
+                // make this unwrap because Throw from JsResult is useless
+                Ok($name(call).unwrap())
             };
             outter
         }
