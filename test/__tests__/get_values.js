@@ -1,5 +1,5 @@
 const native = require('../native');
-debugger;
+
 describe('all values', () => {
     test('value 32', () => {
         expect(native.make_num_32()).toBe(32);
@@ -38,7 +38,7 @@ describe('all values', () => {
     });
 
     test('expect_obj', () => {
-        native.expect_obj({
+        const a = native.expect_obj({
             a: 1,
             b: [1, 2],
             c: "abc",
@@ -49,8 +49,11 @@ describe('all values', () => {
             h: '\uD83E\uDD37',
             i: "Empty",
             j: {Tuple: [27, "hij"]},
-            k: {Struct: { a: 128, b: [9, 8, 7]}}
+            k: {Struct: { a: 128, b: [9, 8, 7]}},
+            l: "jkl",
         });
+
+        console.log('a', a);
     });
 
     test('expect_num_array', () => {

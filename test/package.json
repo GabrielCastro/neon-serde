@@ -12,6 +12,11 @@
   "scripts": {
     "install": "neon build",
     "build": "neon build",
-    "test": "neon build && jest"
+    "test": "neon build && jest -i"
+  },
+  "jest": {
+    "verbose": true,
+    "cache": false,
+    "watchman": false
   }
 }
