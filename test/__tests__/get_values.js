@@ -83,4 +83,10 @@ describe('all values', () => {
     test('expect_num_array', () => {
         native.expect_num_array([0, 1, 2, 3]);
     });
+
+    test('expect_buffer', () => {
+        native.expect_buffer(new Buffer([252, 251, 250]));
+        native.expect_buffer(new Uint8Array([252, 251, 250]));
+        native.expect_buffer(new Uint8ClampedArray([252, 251, 250]));
+    });
 });

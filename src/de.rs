@@ -211,16 +211,31 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_bytes: unimplmented");
-        unimplemented!()
+        let mut buff = self.input.check::<js::binary::JsBuffer>()?;
+        use neon::vm::Lock;
+        let copy = buff.grab(|buff| {
+            let buff_slice = buff.as_slice();
+            // TODO?: use Vec::with_capacity(buff_slice.len()); vec.set_len();
+            let mut copy: Vec<u8> = vec![0; buff_slice.len()];
+            copy.copy_from_slice(buff_slice);
+            copy
+        });
+        visitor.visit_bytes(&copy)
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_byte_buf: unimplmented");
-        unimplemented!()
+        let mut buff = self.input.check::<js::binary::JsBuffer>()?;
+        use neon::vm::Lock;
+        let copy = buff.grab(|buff| {
+            let buff_slice = buff.as_slice();
+            let mut copy: Vec<u8> = vec![0; buff_slice.len()];
+            copy.copy_from_slice(buff_slice);
+            copy
+        });
+        visitor.visit_byte_buf(copy)
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>

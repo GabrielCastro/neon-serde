@@ -175,6 +175,22 @@ fn expect_num_array(call: Call) -> JsResult<JsValue> {
     Ok(JsNull::new().upcast())
 }
 
+fn expect_buffer(call: Call) -> JsResult<JsValue> {
+    let scope = call.scope;
+    let value = serde_bytes::ByteBuf::from(vec![252u8, 251, 250]);
+
+    let arg0 = call.arguments
+        .require(scope, 0)
+        .unwrap()
+        .check::<JsValue>()
+        .unwrap();
+
+    let de_serialized: serde_bytes::ByteBuf = neon_serde::from_handle(arg0, scope).unwrap();
+    assert_eq!(value, de_serialized);
+
+    Ok(JsNull::new().upcast())
+}
+
 macro_rules! reg_func {
     ($name:ident) => {
         {
@@ -198,5 +214,6 @@ register_module!(m, {
     m.export("expect_hello_world", reg_func!(expect_hello_world))?;
     m.export("expect_obj", reg_func!(expect_obj))?;
     m.export("expect_num_array", reg_func!(expect_num_array))?;
+    m.export("expect_buffer", reg_func!(expect_buffer))?;
     Ok(())
 });
