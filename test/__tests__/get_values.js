@@ -47,7 +47,8 @@ describe('all values', () => {
             j: {Tuple: [27, "hij"]},
             k: {Struct: { a: 128, b: [9, 8, 7]}},
             l: "jkl",
-            m: [0,1,2,3,4]
+            m: [0,1,2,3,4],
+            o: {Value: ['z', 'y', 'x']}
         });
     })
 

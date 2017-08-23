@@ -179,7 +179,11 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     where
         T: Serialize,
     {
-        unimplemented!()
+        let obj = js::JsObject::new(&mut *self.scope);
+        let value_js = to_value(value, &mut *self.scope)?;
+        obj.set(variant, value_js)?;
+
+        Ok(obj.upcast())
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {

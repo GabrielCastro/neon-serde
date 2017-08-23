@@ -26,6 +26,7 @@ enum TypeEnum {
     Empty,
     Tuple(u32, String),
     Struct { a: u8, b: Vec<u8> },
+    Value(Vec<char>)
 }
 
 
@@ -44,6 +45,7 @@ struct AnObjectTwo {
     k: TypeEnum,
     l: String,
     m: Vec<u8>,
+    o: TypeEnum
 }
 
 
@@ -98,6 +100,7 @@ make_test!(make_object, {
         },
         l: "jkl".into(),
         m: vec![0, 1, 2, 3, 4],
+        o: TypeEnum::Value(vec!['z', 'y', 'x'])
     };
     value
 });
@@ -138,6 +141,7 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
         },
         l: "jkl".into(),
         m: vec![0, 1, 2, 3, 4],
+        o: TypeEnum::Value(vec!['z', 'y', 'x']),
     };
 
     let arg0 = call.arguments.require(scope, 0)?.check::<JsValue>()?;
