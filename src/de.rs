@@ -53,8 +53,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
             String(val) => visitor.visit_string(val.value()),
             Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
             Number(val) => visitor.visit_f64(val.value()),
-            Array(val) => self.deserialize_seq(visitor),
-            Object(val) => self.deserialize_map(visitor),
+            Array(_) => self.deserialize_seq(visitor),
+            Object(_) => self.deserialize_map(visitor),
             Function(_) => {
                 bail!(NotImplemented("unimplemented Deserializer::Deserializer(Function)"));
             },
@@ -262,7 +262,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
 
     fn deserialize_unit_struct<V>(
         self,
-        name: &'static str,
+        _name: &'static str,
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
@@ -273,7 +273,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
 
     fn deserialize_newtype_struct<V>(
         self,
-        name: &'static str,
+        _name: &'static str,
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
@@ -289,7 +289,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         visitor.visit_seq(JsArrayAccess::new(&mut self)?)
     }
 
-    fn deserialize_tuple<V>(mut self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(mut self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
@@ -298,8 +298,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
 
     fn deserialize_tuple_struct<V>(
         self,
-        name: &'static str,
-        len: usize,
+        _name: &'static str,
+        _len: usize,
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
@@ -317,8 +317,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
 
     fn deserialize_struct<V>(
         self,
-        name: &'static str,
-        fields: &'static [&'static str],
+        _name: &'static str,
+        _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
@@ -329,8 +329,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
 
     fn deserialize_enum<V>(
         self,
-        name: &'static str,
-        variants: &'static [&'static str],
+        _name: &'static str,
+        _variants: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
@@ -349,8 +349,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
                 }
                 let key = prop_names.get(self.scope, 0)?;
                 let enum_value = val.get(self.scope, key)?;
-                let res = visitor.visit_enum(JsEnumAccess::new(self, enum_value)?);
-                res
+                visitor.visit_enum(JsEnumAccess::new(self, enum_value)?)
             }
             _ => {
                 let m = self.input.to_string(self.scope)?.value();
@@ -523,7 +522,7 @@ impl<'a, 'de, S: 'de + Scope<'de>> EnumAccess<'de> for JsEnumAccess<'a, 'de, S> 
     type Error = LibError;
     type Variant = Self;
 
-    fn variant_seed<V>(mut self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
     where
         V: DeserializeSeed<'de>,
     {
@@ -552,7 +551,7 @@ impl<'a, 'de, S: 'de + Scope<'de>> VariantAccess<'de> for JsEnumAccess<'a, 'de, 
         res
     }
 
-    fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
@@ -565,7 +564,7 @@ impl<'a, 'de, S: 'de + Scope<'de>> VariantAccess<'de> for JsEnumAccess<'a, 'de, 
 
     fn struct_variant<V>(
         self,
-        fields: &'static [&'static str],
+        _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where

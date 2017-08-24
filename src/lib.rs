@@ -1,4 +1,4 @@
-#![allow(unused_variables)]
+#![deny(unused_variables)]
 #![deny(unused_mut)]
 extern crate cast;
 #[macro_use]
