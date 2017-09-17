@@ -1,5 +1,7 @@
 #![deny(unused_variables)]
 #![deny(unused_mut)]
+#![deny(clippy)]
+#![deny(clippy_pedantic)]
 extern crate cast;
 #[macro_use]
 extern crate error_chain;

@@ -56,11 +56,15 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
             Array(_) => self.deserialize_seq(visitor),
             Object(_) => self.deserialize_map(visitor),
             Function(_) => {
-                bail!(NotImplemented("unimplemented Deserializer::Deserializer(Function)"));
-            },
+                bail!(NotImplemented(
+                    "unimplemented Deserializer::Deserializer(Function)"
+                ));
+            }
             Other(_) => {
-                bail!(NotImplemented("unimplemented Deserializer::Deserializer(Other)"));
-            },
+                bail!(NotImplemented(
+                    "unimplemented Deserializer::Deserializer(Other)"
+                ));
+            }
         }
     }
 

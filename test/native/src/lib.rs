@@ -7,7 +7,7 @@ extern crate serde_derive;
 extern crate serde_bytes;
 
 use neon::vm::{Call, JsResult};
-use neon::js::{JsNull, JsValue};
+use neon::js::{JsNull, JsValue, JsUndefined};
 use neon::mem::Handle;
 
 #[derive(Serialize, Debug, Deserialize)]
@@ -60,7 +60,7 @@ macro_rules! make_test {
                 Ok(handle)
             }
 
-            Ok(inner(call).unwrap())
+            Ok(inner(call)?)
         }
     };
 }
@@ -126,7 +126,7 @@ fn expect_hello_world(call: Call) -> neon_serde::errors::Result<Handle<JsValue>>
     let de_serialized: String = neon_serde::from_handle(arg0, scope)?;
     assert_eq!(value, &de_serialized);
 
-    Ok(JsNull::new().upcast())
+    Ok(JsUndefined::new().upcast())
 }
 
 fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
@@ -157,7 +157,7 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
     let de_serialized: AnObjectTwo = neon_serde::from_handle(arg0, scope)?;
     assert_eq!(value, de_serialized);
 
-    Ok(JsNull::new().upcast())
+    Ok(JsUndefined::new().upcast())
 }
 
 fn expect_num_array(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
@@ -171,7 +171,7 @@ fn expect_num_array(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
     let de_serialized: Vec<i32> = neon_serde::from_handle(arg0, scope)?;
     assert_eq!(value, de_serialized);
 
-    Ok(JsNull::new().upcast())
+    Ok(JsUndefined::new().upcast())
 }
 
 fn expect_buffer(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
@@ -184,7 +184,7 @@ fn expect_buffer(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
 
     let de_serialized: serde_bytes::ByteBuf = neon_serde::from_handle(arg0, scope)?;
     assert_eq!(value, de_serialized);
-    Ok(JsNull::new().upcast())
+    Ok(JsUndefined::new().upcast())
 }
 
 macro_rules! reg_func {
@@ -192,7 +192,7 @@ macro_rules! reg_func {
         {
             let outter: fn(call: Call) -> JsResult<JsValue> = |call| {
                 // make this unwrap because Throw from JsResult is useless
-                Ok($name(call).unwrap())
+                Ok($name(call)?)
             };
             outter
         }

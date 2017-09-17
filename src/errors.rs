@@ -2,48 +2,50 @@ use serde::{de, ser};
 use std::fmt::Display;
 use std::convert::From;
 use neon;
+use error_chain;
+use error_chain::ChainedError;
 
-error_chain!{
-        errors {
-            StringTooLong(len: usize) {
-                description("String too long for nodejs")
-                display("String too long for nodejs len: {}", len)
-            }
-            UnableToCoerce(to_type: &'static str) {
-                description("Unable to coerce")
-                display("Unable to coerce value to type: {}", to_type)
-            }
-            EmptyString {
-                description("EmptyString")
-                display("EmptyString")
-            }
-            StringTooLongForChar(len: usize) {
-                description("String too long to be a char")
-                display("String too long to be a char expected len: 1 got len: {}", len)
-            }
-            ExpectingNull
-            InvalidKeyType(key: String) {
-                description("InvalidKeyType")
-                display("key: '{}'", key)
-            }
-            ArrayIndexOutOfBounds(index: u32, length: u32) {
-                description("ArrayIndexOutOfBounds")
-                display(
-                    "ArrayIndexOutOfBounds: attempt to access ({}) size: ({})",
-                    index,
-                    length
-                )
-            }
-            NotImplemented(name: &'static str) {
-                description("Not Implemented")
-                display("Not Implemented: '{}'", name)
-            }
+error_chain! {
+    errors {
+        StringTooLong(len: usize) {
+            description("String too long for nodejs")
+            display("String too long for nodejs len: {}", len)
         }
-        foreign_links {
-            Js(neon::vm::Throw);
-            NumberCastError(::cast::Error);
+        UnableToCoerce(to_type: &'static str) {
+            description("Unable to coerce")
+            display("Unable to coerce value to type: {}", to_type)
+        }
+        EmptyString {
+            description("EmptyString")
+            display("EmptyString")
+        }
+        StringTooLongForChar(len: usize) {
+            description("String too long to be a char")
+            display("String too long to be a char expected len: 1 got len: {}", len)
+        }
+        ExpectingNull
+        InvalidKeyType(key: String) {
+            description("InvalidKeyType")
+            display("key: '{}'", key)
+        }
+        ArrayIndexOutOfBounds(index: u32, length: u32) {
+            description("ArrayIndexOutOfBounds")
+            display(
+                "ArrayIndexOutOfBounds: attempt to access ({}) size: ({})",
+                index,
+                length
+            )
+        }
+        NotImplemented(name: &'static str) {
+            description("Not Implemented")
+            display("Not Implemented: '{}'", name)
         }
     }
+    foreign_links {
+        Js(neon::vm::Throw);
+        NumberCastError(::cast::Error);
+    }
+}
 
 impl ser::Error for Error {
     fn custom<T: Display>(msg: T) -> Self {
@@ -59,7 +61,8 @@ impl de::Error for Error {
 
 impl From<Error> for neon::vm::Throw {
     fn from(err: Error) -> Self {
-        eprintln!("{:?}", err);
-        ::neon::vm::Throw
+        use error_chain::ChainedError;
+        let msg = format!("{}", err.display_chain());
+        neon::js::error::JsError::throw::<()>(neon::js::error::Kind::Error, &msg).unwrap_err()
     }
 }
