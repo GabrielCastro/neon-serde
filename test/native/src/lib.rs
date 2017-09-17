@@ -2,12 +2,12 @@
 extern crate neon;
 extern crate neon_serde;
 extern crate serde;
+extern crate serde_bytes;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_bytes;
 
 use neon::vm::{Call, JsResult};
-use neon::js::{JsNull, JsValue, JsUndefined};
+use neon::js::{JsNull, JsUndefined, JsValue};
 use neon::mem::Handle;
 
 #[derive(Serialize, Debug, Deserialize)]
@@ -19,6 +19,7 @@ struct AnObject {
 
 #[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
 struct Inner;
+
 #[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
 struct Inner2(i32, bool, String);
 
@@ -27,7 +28,7 @@ enum TypeEnum {
     Empty,
     Tuple(u32, String),
     Struct { a: u8, b: Vec<u8> },
-    Value(Vec<char>)
+    Value(Vec<char>),
 }
 
 
@@ -46,7 +47,7 @@ struct AnObjectTwo {
     k: TypeEnum,
     l: String,
     m: Vec<u8>,
-    o: TypeEnum
+    o: TypeEnum,
 }
 
 macro_rules! make_test {
@@ -104,35 +105,37 @@ make_test!(make_object, {
         },
         l: "jkl".into(),
         m: vec![0, 1, 2, 3, 4],
-        o: TypeEnum::Value(vec!['z', 'y', 'x'])
+        o: TypeEnum::Value(vec!['z', 'y', 'x']),
     };
     value
 });
 
 const NUMBER_BYTES: &'static [u8] = &[255u8, 254, 253];
 
-make_test!(make_buff, {
-   serde_bytes::Bytes::new(NUMBER_BYTES)
-});
+make_test!(make_buff, { serde_bytes::Bytes::new(NUMBER_BYTES) });
 
+macro_rules! make_expect {
+    ($name:ident, $val:expr, $val_type:ty) => {
+        fn $name(call: Call) -> JsResult<JsValue> {
+            let scope = call.scope;
+            let value = $val;
+            let arg0 = call.arguments
+                .require(scope, 0)?
+                .check::<JsValue>()?;
 
-fn expect_hello_world(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
-    let scope = call.scope;
-    let value = "hello world";
-    let arg0 = call.arguments
-        .require(scope, 0)?
-        .check::<JsValue>()?;
+            let de_serialized: $val_type = neon_serde::from_handle(arg0, scope)?;
+            assert_eq!(value, de_serialized);
 
-    let de_serialized: String = neon_serde::from_handle(arg0, scope)?;
-    assert_eq!(value, &de_serialized);
-
-    Ok(JsUndefined::new().upcast())
+            Ok(JsUndefined::new().upcast())
+        }
+    };
 }
 
-fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
-    eprintln!("expect_obj");
-    let scope = call.scope;
-    let value = AnObjectTwo {
+make_expect!(expect_hello_world, "hello world", String);
+
+make_expect!(
+    expect_obj,
+    AnObjectTwo {
         a: 1,
         b: vec![1, 2],
         c: "abc".into(),
@@ -150,54 +153,17 @@ fn expect_obj(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
         l: "jkl".into(),
         m: vec![0, 1, 2, 3, 4],
         o: TypeEnum::Value(vec!['z', 'y', 'x']),
-    };
+    },
+    AnObjectTwo
+);
 
-    let arg0 = call.arguments.require(scope, 0)?.check::<JsValue>()?;
+make_expect!(expect_num_array, vec![0, 1, 2, 3], Vec<i32>);
 
-    let de_serialized: AnObjectTwo = neon_serde::from_handle(arg0, scope)?;
-    assert_eq!(value, de_serialized);
-
-    Ok(JsUndefined::new().upcast())
-}
-
-fn expect_num_array(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
-    let scope = call.scope;
-    let value = vec![0, 1, 2, 3];
-
-    let arg0 = call.arguments
-        .require(scope, 0)?
-        .check::<JsValue>()?;
-
-    let de_serialized: Vec<i32> = neon_serde::from_handle(arg0, scope)?;
-    assert_eq!(value, de_serialized);
-
-    Ok(JsUndefined::new().upcast())
-}
-
-fn expect_buffer(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
-    let scope = call.scope;
-    let value = serde_bytes::ByteBuf::from(vec![252u8, 251, 250]);
-
-    let arg0 = call.arguments
-        .require(scope, 0)?
-        .check::<JsValue>()?;
-
-    let de_serialized: serde_bytes::ByteBuf = neon_serde::from_handle(arg0, scope)?;
-    assert_eq!(value, de_serialized);
-    Ok(JsUndefined::new().upcast())
-}
-
-macro_rules! reg_func {
-    ($name:ident) => {
-        {
-            let outter: fn(call: Call) -> JsResult<JsValue> = |call| {
-                // make this unwrap because Throw from JsResult is useless
-                Ok($name(call)?)
-            };
-            outter
-        }
-    }
-}
+make_expect!(
+    expect_buffer,
+    serde_bytes::ByteBuf::from(vec![252u8, 251, 250]),
+    serde_bytes::ByteBuf
+);
 
 register_module!(m, {
     m.export("make_num_77", make_num_77)?;
@@ -208,9 +174,10 @@ register_module!(m, {
     m.export("make_obj", make_obj)?;
     m.export("make_object", make_object)?;
     m.export("make_map", make_map)?;
-    m.export("expect_hello_world", reg_func!(expect_hello_world))?;
-    m.export("expect_obj", reg_func!(expect_obj))?;
-    m.export("expect_num_array", reg_func!(expect_num_array))?;
-    m.export("expect_buffer", reg_func!(expect_buffer))?;
+
+    m.export("expect_hello_world", expect_hello_world)?;
+    m.export("expect_obj", expect_obj)?;
+    m.export("expect_num_array", expect_num_array)?;
+    m.export("expect_buffer", expect_buffer)?;
     Ok(())
 });

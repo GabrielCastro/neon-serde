@@ -50,7 +50,7 @@ describe('all values', () => {
             m: [0,1,2,3,4],
             o: {Value: ['z', 'y', 'x']}
         });
-    })
+    });
 
     test('make_buff', () => {
         const buff = new Buffer([255, 254, 253]);
