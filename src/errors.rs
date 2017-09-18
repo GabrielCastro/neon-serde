@@ -61,7 +61,10 @@ impl de::Error for Error {
 
 impl From<Error> for neon::vm::Throw {
     fn from(err: Error) -> Self {
-        use error_chain::ChainedError;
+        match err.kind() {
+            &ErrorKind::Js(_) => return neon::vm::Throw,
+            _ => (),
+        };
         let msg = format!("{}", err.display_chain());
         neon::js::error::JsError::throw::<()>(neon::js::error::Kind::Error, &msg).unwrap_err()
     }

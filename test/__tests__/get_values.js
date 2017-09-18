@@ -1,6 +1,6 @@
 const native = require('../native');
 
-describe('all values', () => {
+describe('all values ok', () => {
     test('value 32', () => {
         expect(native.make_num_32()).toBe(32);
     });
@@ -62,7 +62,7 @@ describe('all values', () => {
     });
 
     test('expect_obj', () => {
-        const a = native.expect_obj({
+        native.expect_obj({
             a: 1,
             b: [1, 2],
             c: "abc",
@@ -78,8 +78,6 @@ describe('all values', () => {
             m: [0,1,2,3,4],
             o: {Value: ['z', 'y', 'x']}
         });
-
-        console.log('a', a);
     });
 
     test('expect_num_array', () => {
@@ -91,4 +89,41 @@ describe('all values', () => {
         native.expect_buffer(new Uint8Array([252, 251, 250]));
         native.expect_buffer(new Uint8ClampedArray([252, 251, 250]));
     });
+});
+
+describe('throwing functions', () => {
+
+    test('expect_hello_world', () => {
+        expect(() => native.expect_hello_world("GoodBye World")).toThrow(/assertion failed:/);
+    });
+
+    test('expect_obj', () => {
+        expect(() => native.expect_obj({})).toThrow(/missing field `a`/);
+    });
+
+    test('expect_num_array', () => {
+        expect(() => native.expect_num_array([0, 0, 0, 0])).toThrow(/assertion failed:/);
+    });
+
+    test('expect_buffer', () => {
+        expect(() => native.expect_buffer()).toThrow(/not enough arguments/);
+    });
+
+    test('getter that throws', () => {
+        const obj = {
+            a: 1,
+            b: [1,3]
+        };
+        for (const ch of 'cdefghijklmo') {
+            Object.defineProperty(obj, ch, {
+                enumerable: true,
+                configurable: false,
+                get() {
+                    throw new Error('Hi There prop ' + ch);
+                }
+            })
+        }
+        expect(() => native.expect_obj(obj))
+            .toThrow(/Hi There prop c/);
+    })
 });
