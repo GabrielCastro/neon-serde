@@ -2,6 +2,8 @@
 name = "neon-serde"
 version = "0.0.1"
 authors = ["Gabriel Castro <dev@GabrielCastro.ca>"]
+description = "Easily serialize object for use with neon"
+license = "MIT"
 
 [dependencies]
 serde = "1.0.0"
