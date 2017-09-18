@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Gabriel Castro <dev@GabrielCastro.ca>"]
 license = "MIT"
 build = "build.rs"
+publish = false
 
 [lib]
 name = "test"
