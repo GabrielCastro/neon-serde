@@ -1,18 +1,19 @@
-use serde;
-use errors::Result as LibResult;
 use errors::Error as LibError;
 use errors::ErrorKind::*;
-use serde::de::Visitor;
-use neon::mem::Handle;
-use neon::scope::{RootScope, Scope};
+use errors::Result as LibResult;
 use neon::js;
 use neon::js::Value;
+use neon::mem::Handle;
+use neon::scope::{RootScope, Scope};
+use neon::vm::Lock;
+use serde;
+use serde::de::Visitor;
 
-use serde::de::{DeserializeSeed, EnumAccess, MapAccess, SeqAccess, VariantAccess};
+use cast;
 use neon::js::Object;
 use neon::js::Variant::*;
-use cast;
 use serde::Deserializer as __0;
+use serde::de::{DeserializeSeed, EnumAccess, MapAccess, SeqAccess, VariantAccess};
 
 
 pub fn from_handle<'a, T>(
@@ -218,7 +219,6 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         let mut buff = self.input.check::<js::binary::JsBuffer>()?;
-        use neon::vm::Lock;
         let copy = buff.grab(|buff| {
             let buff_slice = buff.as_slice();
             // TODO?: use Vec::with_capacity(buff_slice.len()); vec.set_len();
@@ -234,7 +234,6 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         let mut buff = self.input.check::<js::binary::JsBuffer>()?;
-        use neon::vm::Lock;
         let copy = buff.grab(|buff| {
             let buff_slice = buff.as_slice();
             let mut copy: Vec<u8> = vec![0; buff_slice.len()];

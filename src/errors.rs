@@ -1,9 +1,8 @@
-use serde::{de, ser};
-use std::fmt::Display;
-use std::convert::From;
-use neon;
-use error_chain;
 use error_chain::ChainedError;
+use neon;
+use serde::{de, ser};
+use std::convert::From;
+use std::fmt::Display;
 
 error_chain! {
     errors {
@@ -61,9 +60,8 @@ impl de::Error for Error {
 
 impl From<Error> for neon::vm::Throw {
     fn from(err: Error) -> Self {
-        match err.kind() {
-            &ErrorKind::Js(_) => return neon::vm::Throw,
-            _ => (),
+        if let ErrorKind::Js(_) = *err.kind() {
+            return neon::vm::Throw
         };
         let msg = format!("{}", err.display_chain());
         neon::js::error::JsError::throw::<()>(neon::js::error::Kind::Error, &msg).unwrap_err()

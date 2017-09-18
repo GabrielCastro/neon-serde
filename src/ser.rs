@@ -1,20 +1,22 @@
-use serde::ser::{self, Serialize};
+use cast;
 use errors::Error;
 use errors::ErrorKind;
 use errors::Result as LibResult;
 use neon::js;
+use neon::js::Object;
 use neon::mem::Handle;
 use neon::scope::RootScope;
-use neon::js::Object;
-use cast;
+use neon::vm::Lock;
+use serde::ser::{self, Serialize};
+
 
 pub fn to_value<'value, 'shandle, 'scope, V: Serialize + ?Sized>(
     value: &'value V,
     scope: &'shandle mut RootScope<'scope>,
 ) -> LibResult<Handle<'shandle, js::JsValue>> {
     let serializer = Serializer { scope };
-    let serialized = value.serialize(serializer)?;
-    Ok(serialized)
+    let serialized_value = value.serialize(serializer)?;
+    Ok(serialized_value)
 }
 
 pub struct Serializer<'a, 'b: 'a> {
@@ -70,43 +72,43 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        Ok(js::JsNumber::new(self.scope, v as f64).upcast())
+        Ok(js::JsNumber::new(self.scope, v).upcast())
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
@@ -125,7 +127,6 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
         let mut buff = js::binary::JsBuffer::new(self.scope, cast::u32(v.len())?)?;
-        use neon::vm::Lock;
         buff.grab(|mut buff| buff.as_mut_slice().clone_from_slice(v));
         Ok(buff.upcast())
     }
@@ -263,6 +264,7 @@ impl<'a, 'b: 'a> ser::SerializeSeq for ArraySerializer<'a, 'b> {
         Ok(self.array.upcast())
     }
 }
+
 impl<'a, 'b: 'a> ser::SerializeTuple for ArraySerializer<'a, 'b> {
     type Ok = Handle<'a, js::JsValue>;
     type Error = Error;

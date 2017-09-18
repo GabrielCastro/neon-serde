@@ -1,7 +1,10 @@
+#![allow(unknown_lints)]
 #![deny(unused_variables)]
 #![deny(unused_mut)]
 #![deny(clippy)]
 #![deny(clippy_pedantic)]
+#![allow(stutter)]
+
 extern crate cast;
 #[macro_use]
 extern crate error_chain;
@@ -12,5 +15,5 @@ pub mod ser;
 pub mod de;
 pub mod errors;
 
-pub use ser::to_value;
 pub use de::from_handle;
+pub use ser::to_value;
