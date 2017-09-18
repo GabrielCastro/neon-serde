@@ -6,7 +6,7 @@ description = "Easily serialize object for use with neon"
 license = "MIT"
 
 [dependencies]
-serde = "1.0.0"
-error-chain = "0.11.0"
-neon = "*"
-cast = "*"
+serde = "1.*"
+error-chain = "0.11.*"
+neon = "0.1.*"
+cast = "0.2.*"
