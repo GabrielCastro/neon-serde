@@ -4,6 +4,7 @@
 #![deny(clippy)]
 #![deny(clippy_pedantic)]
 #![allow(stutter)]
+#![recursion_limit="128"]
 
 extern crate cast;
 #[macro_use]
