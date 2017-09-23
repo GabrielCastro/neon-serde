@@ -15,7 +15,12 @@ use neon::js::Variant::*;
 use serde::Deserializer as __0;
 use serde::de::{DeserializeSeed, EnumAccess, MapAccess, SeqAccess, VariantAccess};
 
-
+/// Deserialize an instance of type `T` from a `Handle<js::JsValue>`
+///
+/// # Errors
+///
+/// Can fail for various reasons see `ErrorKind`
+///
 pub fn from_handle<'a, T>(
     input: Handle<'a, js::JsValue>,
     scope: &'a mut RootScope<'a>,

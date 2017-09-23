@@ -9,7 +9,13 @@ use neon::scope::RootScope;
 use neon::vm::Lock;
 use serde::ser::{self, Serialize};
 
-
+/// Converts a value of type `V` to a `JsValue`
+///
+/// # Errors
+///
+/// * `NumberCastError` trying to serialize a `u64` can fail if it overflows in a cast to `f64`
+/// * `StringTooLong` if the string exceeds v8's max string size
+///
 pub fn to_value<'value, 'shandle, 'scope, V: Serialize + ?Sized>(
     value: &'value V,
     scope: &'shandle mut RootScope<'scope>,
@@ -115,7 +121,7 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
         let mut b = [0; 4];
         let result = v.encode_utf8(&mut b);
         let js_str =
-            js::JsString::new(self.scope, result).ok_or_else(|| ErrorKind::StringTooLong(4))?;
+            js::JsString::new(self.scope, result).ok_or_else(|| ErrorKind::StringTooLongForChar(4))?;
         Ok(js_str.upcast())
     }
 
