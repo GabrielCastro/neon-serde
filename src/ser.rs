@@ -1,3 +1,6 @@
+//!
+//! Serialize a Rust data structure into a `JsValue`
+//!
 use cast;
 use errors::Error;
 use errors::ErrorKind;
@@ -120,8 +123,8 @@ impl<'a, 'b> ser::Serializer for Serializer<'a, 'b> {
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
         let mut b = [0; 4];
         let result = v.encode_utf8(&mut b);
-        let js_str =
-            js::JsString::new(self.scope, result).ok_or_else(|| ErrorKind::StringTooLongForChar(4))?;
+        let js_str = js::JsString::new(self.scope, result)
+            .ok_or_else(|| ErrorKind::StringTooLongForChar(4))?;
         Ok(js_str.upcast())
     }
 

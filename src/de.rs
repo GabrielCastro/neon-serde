@@ -1,3 +1,6 @@
+//!
+//! Deserialize a `JsValue` into a Rust data structure
+//!
 use errors::Error as LibError;
 use errors::ErrorKind::*;
 use errors::Result as LibResult;
