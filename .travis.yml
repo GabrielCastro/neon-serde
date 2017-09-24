@@ -27,6 +27,7 @@ before_install:
   - source $HOME/.nvm/nvm.sh
   - nvm install ${TRAVIS_NODE_VERSION}
   - nvm use ${TRAVIS_NODE_VERSION}
+  - ./ci/setup.sh
 
 script:
   - ./ci/test.sh
