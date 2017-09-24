@@ -13,7 +13,6 @@ env:
   matrix:
     - TRAVIS_NODE_VERSION="8"
     - TRAVIS_NODE_VERSION="6"
-    - TRAVIS_NODE_VERSION="4"
 
 matrix:
   allow_failures:
