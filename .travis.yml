@@ -6,6 +6,12 @@ rust:
   - beta
   - nightly
 
+env:
+  matrix:
+    - TRAVIS_NODE_VERSION="8"
+    - TRAVIS_NODE_VERSION="6"
+    - TRAVIS_NODE_VERSION="4"
+
 matrix:
   allow_failures:
     - rust: nightly
@@ -14,6 +20,10 @@ os:
   - linux
   - osx
 
+before_install:
+  - source $HOME/.nvm/nvm.sh
+  - nvm install ${TRAVIS_NODE_VERSION}
+  - nvm use ${TRAVIS_NODE_VERSION}
+
 script:
-  - cargo build --verbose --all
-  - cargo test --verbose --all
+  - ./ci/test.sh

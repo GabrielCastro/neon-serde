@@ -6,7 +6,7 @@ extern crate serde_bytes;
 #[macro_use]
 extern crate serde_derive;
 
-use neon::js::{JsNull, JsUndefined, JsValue};
+use neon::js::{JsUndefined, JsValue};
 use neon::mem::Handle;
 use neon::vm::{Call, JsResult};
 
