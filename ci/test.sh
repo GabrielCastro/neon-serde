@@ -9,4 +9,5 @@ cargo test --verbose --all
 cd test
 
 yarn install
+yarn run build:debug
 yarn test

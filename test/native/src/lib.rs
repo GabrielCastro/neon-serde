@@ -120,8 +120,7 @@ macro_rules! make_expect {
             let scope = call.scope;
             let value = $val;
             let arg0 = call.arguments
-                .require(scope, 0)?
-                .check::<JsValue>()?;
+                .require(scope, 0)?;
 
             let de_serialized: $val_type = neon_serde::from_handle(arg0, scope)?;
             assert_eq!(value, de_serialized);

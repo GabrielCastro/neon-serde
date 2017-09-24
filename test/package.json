@@ -12,7 +12,8 @@
   "scripts": {
     "install": "neon build",
     "build": "neon build",
-    "test": "neon build && jest -i"
+    "build:debug": "neon build --debug",
+    "test": "neon build --debug && jest -i"
   },
   "jest": {
     "verbose": true,
