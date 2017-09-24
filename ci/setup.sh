@@ -3,7 +3,7 @@ set -euxo pipefail
 
 cd "$(dirname "$0")/.."
 
-if [[ "$(uname)" = "Darwin" ]] ;
+if [[ "$(uname)" = "Darwin" ]] ; then
     brew update
     brew install yarn
 fi
