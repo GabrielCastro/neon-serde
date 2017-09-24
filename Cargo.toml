@@ -13,3 +13,6 @@ cast = "0.2.*"
 
 [dev-dependencies]
 serde_derive = "1.*"
+
+[badges]
+travis-ci = { repository = "GabrielCastro/neon-serde" }
