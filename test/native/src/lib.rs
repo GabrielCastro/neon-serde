@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate neon;
 extern crate neon_serde;
-extern crate serde;
 extern crate serde_bytes;
 #[macro_use]
 extern crate serde_derive;
@@ -117,15 +116,17 @@ make_test!(make_buff, { serde_bytes::Bytes::new(NUMBER_BYTES) });
 macro_rules! make_expect {
     ($name:ident, $val:expr, $val_type:ty) => {
         fn $name(call: Call) -> JsResult<JsValue> {
-            let scope = call.scope;
-            let value = $val;
-            let arg0 = call.arguments
-                .require(scope, 0)?;
+            fn inner(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
+                let scope = call.scope;
+                let value = $val;
+                let arg0 = call.arguments
+                    .require(scope, 0)?;
 
-            let de_serialized: $val_type = neon_serde::from_handle(arg0, scope)?;
-            assert_eq!(value, de_serialized);
-
-            Ok(JsUndefined::new().upcast())
+                let de_serialized: $val_type = neon_serde::from_handle(arg0, scope)?;
+                assert_eq!(value, de_serialized);
+                Ok(JsUndefined::new().upcast())
+            }
+            Ok(inner(call)?)
         }
     };
 }
