@@ -87,7 +87,12 @@ describe('all values ok', () => {
     test('expect_buffer', () => {
         native.expect_buffer(new Buffer([252, 251, 250]));
         native.expect_buffer(new Uint8Array([252, 251, 250]));
-        native.expect_buffer(new Uint8ClampedArray([252, 251, 250]));
+
+        const version = Number(process.versions.modules);
+
+        if (version >= 57) {
+            native.expect_buffer(new Uint8ClampedArray([252, 251, 250]));
+        }
     });
 });
 

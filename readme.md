@@ -9,13 +9,18 @@ This crate is a utility to easily convert values between
 A `Handle<JsValue>` from the `neon` crate
 and any value implementing `serde::{Serialize, Deserialize}`
 
+## Versions support
+
+neon-serde targets node >= 6.0
+`Uint8ClampedArray` only works on node >= 8
+
 ## Usage
 
 #### `neon_serde::from_handle`
 Convert a `Handle<js::JsValue>` to
 a type implementing `serde::Deserialize`
 
-#### `neon_serde::to_value`
+#### `neon_serde::to_value`˚
 Convert a value implementing `serde::Serialize` to
 a `Handle<JsValue>`
 
