@@ -9,7 +9,6 @@ use errors::Result as LibResult;
 use neon::js;
 use neon::js::Object;
 use neon::mem::Handle;
-use neon::scope::RootScope;
 use neon::scope::Scope;
 use neon::vm::Lock;
 use serde::ser::{self, Serialize};
@@ -34,6 +33,7 @@ pub fn to_value<'value, 'shandle, 'scope: 'shandle, V: Serialize + ?Sized, S: Sc
     Ok(serialized_value)
 }
 
+#[doc(hidden)]
 pub struct Serializer<'a, 'b: 'a, S: 'a>
 where
     S: Scope<'b>,
@@ -91,6 +91,7 @@ where
     inner: StructSerializer<'a, 'b, S>,
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> ser::Serializer for Serializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -279,7 +280,7 @@ where
     }
 }
 
-
+#[doc(hidden)]
 impl<'a, 'b: 'a, S> ArraySerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -294,6 +295,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b: 'a, S> ser::SerializeSeq for ArraySerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -337,6 +339,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b: 'a, S> ser::SerializeTupleStruct for ArraySerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -356,6 +359,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> TupleVariantSerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -375,6 +379,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> ser::SerializeTupleVariant for TupleVariantSerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -395,6 +400,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> MapSerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -411,6 +417,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> ser::SerializeMap for MapSerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -442,6 +449,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> StructSerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -456,6 +464,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> ser::SerializeStruct for StructSerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -481,6 +490,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> StructVariantSerializer<'a, 'b, S>
 where
     S: Scope<'b>,
@@ -500,6 +510,7 @@ where
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'b, S> ser::SerializeStructVariant for StructVariantSerializer<'a, 'b, S>
 where
     S: Scope<'b>,

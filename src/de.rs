@@ -3,7 +3,7 @@
 //!
 
 use errors::Error as LibError;
-use errors::ErrorKind::*;
+use errors::ErrorKind;
 use errors::Result as LibResult;
 use neon::js;
 use neon::js::Value;
@@ -15,7 +15,7 @@ use serde::de::Visitor;
 
 use cast;
 use neon::js::Object;
-use neon::js::Variant::*;
+use neon::js::Variant;
 use serde::Deserializer as __0;
 use serde::de::{DeserializeSeed, EnumAccess, MapAccess, SeqAccess, VariantAccess};
 
@@ -37,18 +37,20 @@ where
     Ok(t)
 }
 
-
+#[doc(hidden)]
 pub struct Deserializer<'de, S: 'de + Scope<'de>> {
     input: Handle<'de, js::JsValue>,
     scope: &'de mut S,
 }
 
+#[doc(hidden)]
 impl<'de, S: 'de + Scope<'de>> Deserializer<'de, S> {
     fn new(input: Handle<'de, js::JsValue>, scope: &'de mut S) -> Self {
         Deserializer { input, scope }
     }
 }
 
+#[doc(hidden)]
 impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Deserializer<'de, S> {
     type Error = LibError;
 
@@ -57,21 +59,21 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Undefined(_) => visitor.visit_none(),
-            Null(_) => visitor.visit_unit(),
-            Boolean(val) => visitor.visit_bool(val.value()),
-            String(val) => visitor.visit_string(val.value()),
-            Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
-            Number(val) => visitor.visit_f64(val.value()),
-            Array(_) => self.deserialize_seq(visitor),
-            Object(_) => self.deserialize_map(visitor),
-            Function(_) => {
-                bail!(NotImplemented(
+            Variant::Undefined(_) => visitor.visit_none(),
+            Variant::Null(_) => visitor.visit_unit(),
+            Variant::Boolean(val) => visitor.visit_bool(val.value()),
+            Variant::String(val) => visitor.visit_string(val.value()),
+            Variant::Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
+            Variant::Number(val) => visitor.visit_f64(val.value()),
+            Variant::Array(_) => self.deserialize_seq(visitor),
+            Variant::Object(_) => self.deserialize_map(visitor),
+            Variant::Function(_) => {
+                bail!(ErrorKind::NotImplemented(
                     "unimplemented Deserializer::Deserializer(Function)",
                 ));
             }
-            Other(_) => {
-                bail!(NotImplemented(
+            Variant::Other(_) => {
+                bail!(ErrorKind::NotImplemented(
                     "unimplemented Deserializer::Deserializer(Other)",
                 ));
             }
@@ -83,13 +85,13 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Null(_) | Undefined(_) => visitor.visit_bool(false),
-            Boolean(val) => visitor.visit_bool(val.value()),
-            Number(val) => {
+            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_bool(false),
+            Variant::Boolean(val) => visitor.visit_bool(val.value()),
+            Variant::Number(val) => {
                 let num = val.value();
                 visitor.visit_bool(num != 0.0)
             }
-            _ => Err(UnableToCoerce("type cannot be made into bool"))?,
+            _ => Err(ErrorKind::UnableToCoerce("type cannot be made into bool"))?,
         }
     }
 
@@ -193,13 +195,13 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
 
         let result = match chars.next() {
             Some(ch) => visitor.visit_char(ch),
-            None => Err(EmptyString)?,
+            None => Err(ErrorKind::EmptyString)?,
         };
 
         let num_left = chars.count();
 
         if num_left > 0 {
-            Err(StringTooLongForChar(num_left + 1))?
+            Err(ErrorKind::StringTooLongForChar(num_left + 1))?
         }
 
         result
@@ -257,7 +259,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Null(_) | Undefined(_) => visitor.visit_none(),
+            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
     }
@@ -267,8 +269,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Null(_) | Undefined(_) => visitor.visit_unit(),
-            _ => Err(ExpectingNull)?,
+            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_unit(),
+            _ => Err(ErrorKind::ExpectingNull)?,
         }
     }
 
@@ -350,12 +352,12 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
     {
         use serde::de::IntoDeserializer;
         match self.input.variant() {
-            String(val) => visitor.visit_enum(val.value().into_deserializer()),
-            Object(val) => {
+            Variant::String(val) => visitor.visit_enum(val.value().into_deserializer()),
+            Variant::Object(val) => {
                 let prop_names = val.get_own_property_names(self.scope)?;
                 let len = prop_names.len();
                 if len != 1 {
-                    Err(InvalidKeyType(
+                    Err(ErrorKind::InvalidKeyType(
                         format!("object key with {} properties", len),
                     ))?
                 }
@@ -365,7 +367,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
             }
             _ => {
                 let m = self.input.to_string(self.scope)?.value();
-                Err(InvalidKeyType(m))?
+                Err(ErrorKind::InvalidKeyType(m))?
             }
         }
     }
@@ -375,13 +377,13 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            String(val) => visitor.visit_string(val.value()),
-            Number(val) => visitor.visit_f64(val.value()),
-            Object(val) => {
+            Variant::String(val) => visitor.visit_string(val.value()),
+            Variant::Number(val) => visitor.visit_f64(val.value()),
+            Variant::Object(val) => {
                 let prop_names = val.get_own_property_names(self.scope)?;
                 let len = prop_names.len();
                 if len != 1 {
-                    Err(InvalidKeyType(
+                    Err(ErrorKind::InvalidKeyType(
                         format!("object key with {} properties", len),
                     ))?
                 }
@@ -391,7 +393,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
             }
             _ => {
                 let m = self.input.to_string(self.scope)?.value();
-                Err(InvalidKeyType(m))?
+                Err(ErrorKind::InvalidKeyType(m))?
             }
         }
     }
@@ -404,13 +406,14 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
     }
 }
 
-
+#[doc(hidden)]
 struct JsArrayAccess<'a, 'de: 'a, S: 'de + Scope<'de>> {
     de: &'a mut Deserializer<'de, S>,
     idx: u32,
     len: u32,
 }
 
+#[doc(hidden)]
 impl<'a, 'de, S: 'de + Scope<'de>> JsArrayAccess<'a, 'de, S> {
     fn new(de: &'a mut Deserializer<'de, S>) -> LibResult<Self> {
         let len = de.input.check::<js::JsArray>()?.len();
@@ -422,6 +425,7 @@ impl<'a, 'de, S: 'de + Scope<'de>> JsArrayAccess<'a, 'de, S> {
     }
 }
 
+#[doc(hidden)]
 impl<'de, 'a, S: 'de + Scope<'de>> SeqAccess<'de> for JsArrayAccess<'a, 'de, S> {
     type Error = LibError;
 
@@ -448,7 +452,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> SeqAccess<'de> for JsArrayAccess<'a, 'de, S> 
     }
 }
 
-
+#[doc(hidden)]
 struct JsObjectAccess<'a, 'de: 'a, S: 'de + Scope<'de>> {
     de: &'a mut Deserializer<'de, S>,
     prop_names: Handle<'a, js::JsArray>,
@@ -456,6 +460,7 @@ struct JsObjectAccess<'a, 'de: 'a, S: 'de + Scope<'de>> {
     len: u32,
 }
 
+#[doc(hidden)]
 impl<'a, 'de, S: 'de + Scope<'de>> JsObjectAccess<'a, 'de, S> {
     fn new(de: &'a mut Deserializer<'de, S>) -> LibResult<Self> {
         let obj = de.input.check::<js::JsObject>()?;
@@ -471,6 +476,7 @@ impl<'a, 'de, S: 'de + Scope<'de>> JsObjectAccess<'a, 'de, S> {
     }
 }
 
+#[doc(hidden)]
 impl<'de, 'a, S: 'de + Scope<'de>> MapAccess<'de> for JsObjectAccess<'a, 'de, S> {
     type Error = LibError;
 
@@ -499,7 +505,7 @@ impl<'de, 'a, S: 'de + Scope<'de>> MapAccess<'de> for JsObjectAccess<'a, 'de, S>
         V: DeserializeSeed<'de>,
     {
         if self.idx >= self.len {
-            return Err(ArrayIndexOutOfBounds(self.len, self.idx))?;
+            return Err(ErrorKind::ArrayIndexOutOfBounds(self.len, self.idx))?;
         }
         let prop_name = self.prop_names.get(self.de.scope, self.idx)?;
         let obj = self.de.input.check::<js::JsObject>()?;
@@ -519,17 +525,20 @@ impl<'de, 'a, S: 'de + Scope<'de>> MapAccess<'de> for JsObjectAccess<'a, 'de, S>
     }
 }
 
+#[doc(hidden)]
 struct JsEnumAccess<'a, 'de: 'a, S: 'de + Scope<'de>> {
     de: &'a mut Deserializer<'de, S>,
     value: Handle<'de, js::JsValue>,
 }
 
+#[doc(hidden)]
 impl<'a, 'de, S: 'de + Scope<'de>> JsEnumAccess<'a, 'de, S> {
     fn new(de: &'a mut Deserializer<'de, S>, value: Handle<'de, js::JsValue>) -> LibResult<Self> {
         Ok(JsEnumAccess { de, value })
     }
 }
 
+#[doc(hidden)]
 impl<'a, 'de, S: 'de + Scope<'de>> EnumAccess<'de> for JsEnumAccess<'a, 'de, S> {
     type Error = LibError;
     type Variant = Self;
@@ -544,7 +553,7 @@ impl<'a, 'de, S: 'de + Scope<'de>> EnumAccess<'de> for JsEnumAccess<'a, 'de, S> 
     }
 }
 
-
+#[doc(hidden)]
 impl<'a, 'de, S: 'de + Scope<'de>> VariantAccess<'de> for JsEnumAccess<'a, 'de, S> {
     type Error = LibError;
 

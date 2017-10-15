@@ -9,3 +9,7 @@ if [[ "$(uname)" = "Darwin" ]] ; then
 fi
 
 cargo install rustfmt
+
+if [[ "${TRAVIS_RUST_VERSION:-}" = "nightly" ]] ; then
+    which rustfmt || cargo install clippy
+fi
