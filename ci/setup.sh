@@ -7,3 +7,5 @@ if [[ "$(uname)" = "Darwin" ]] ; then
     brew update
     brew install yarn
 fi
+
+cargo install rustfmt
