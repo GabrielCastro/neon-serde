@@ -1,6 +1,7 @@
 //!
 //! Deserialize a `JsValue` into a Rust data structure
 //!
+
 use errors::Error as LibError;
 use errors::ErrorKind::*;
 use errors::Result as LibResult;
@@ -66,12 +67,12 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
             Object(_) => self.deserialize_map(visitor),
             Function(_) => {
                 bail!(NotImplemented(
-                    "unimplemented Deserializer::Deserializer(Function)"
+                    "unimplemented Deserializer::Deserializer(Function)",
                 ));
             }
             Other(_) => {
                 bail!(NotImplemented(
-                    "unimplemented Deserializer::Deserializer(Other)"
+                    "unimplemented Deserializer::Deserializer(Other)",
                 ));
             }
         }
