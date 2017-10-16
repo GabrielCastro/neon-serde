@@ -85,7 +85,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_bool(false),
+            Variant::Null(_) |
+            Variant::Undefined(_) => visitor.visit_bool(false),
             Variant::Boolean(val) => visitor.visit_bool(val.value()),
             Variant::Number(val) => {
                 let num = val.value();
@@ -259,7 +260,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_none(),
+            Variant::Null(_) |
+            Variant::Undefined(_) => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
     }
@@ -269,7 +271,8 @@ impl<'de, 'a, S: 'de + Scope<'de>> serde::de::Deserializer<'de> for &'a mut Dese
         V: Visitor<'de>,
     {
         match self.input.variant() {
-            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_unit(),
+            Variant::Null(_) |
+            Variant::Undefined(_) => visitor.visit_unit(),
             _ => Err(ErrorKind::ExpectingNull)?,
         }
     }
