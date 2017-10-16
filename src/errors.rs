@@ -2,7 +2,6 @@
 //! Defines error handling types used by the create
 //! uses the `error-chain` create for generation
 
-use error_chain::ChainedError;
 use neon;
 use serde::{de, ser};
 use std::convert::From;
@@ -83,6 +82,7 @@ impl de::Error for Error {
     }
 }
 
+#[allow(use_debug)]
 impl From<Error> for neon::vm::Throw {
     fn from(err: Error) -> Self {
         if let ErrorKind::Js(_) = *err.kind() {

@@ -8,6 +8,7 @@ extern crate serde_derive;
 use neon::js::{JsUndefined, JsValue};
 use neon::mem::Handle;
 use neon::vm::{Call, JsResult};
+use neon::scope::Scope;
 
 #[derive(Serialize, Debug, Deserialize)]
 struct AnObject {
