@@ -1516,9 +1516,9 @@ natural-compare@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
 
-neon-cli@^0.1.18:
-  version "0.1.19"
-  resolved "https://registry.yarnpkg.com/neon-cli/-/neon-cli-0.1.19.tgz#5075ec594c298447a577264e4ec7fca206750113"
+neon-cli@^0.1.20:
+  version "0.1.20"
+  resolved "https://registry.yarnpkg.com/neon-cli/-/neon-cli-0.1.20.tgz#a5cbec90ea305c140e5bcb4feda15890fe0edcb8"
   dependencies:
     chalk "^1.1.1"
     command-line-args "^4.0.2"
