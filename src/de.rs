@@ -8,7 +8,7 @@ use errors::Result as LibResult;
 use neon::js;
 use neon::js::Value;
 use neon::mem::Handle;
-use neon::scope::{RootScope, Scope};
+use neon::scope::Scope;
 use neon::vm::Lock;
 use serde;
 use serde::de::Visitor;
@@ -25,14 +25,12 @@ use serde::de::{DeserializeSeed, EnumAccess, MapAccess, SeqAccess, VariantAccess
 ///
 /// Can fail for various reasons see `ErrorKind`
 ///
-pub fn from_handle<'a, T>(
-    input: Handle<'a, js::JsValue>,
-    scope: &'a mut RootScope<'a>,
-) -> LibResult<T>
+pub fn from_handle<'a, T, S>(input: Handle<'a, js::JsValue>, scope: &'a mut S) -> LibResult<T>
 where
     T: serde::Deserialize<'a> + ?Sized,
+    S: Scope<'a> + 'a,
 {
-    let mut deserializer: Deserializer<RootScope<'a>> = Deserializer::new(input, scope);
+    let mut deserializer: Deserializer<S> = Deserializer::new(input, scope);
     let t = T::deserialize(&mut deserializer)?;
     Ok(t)
 }
