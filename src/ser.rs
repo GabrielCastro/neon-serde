@@ -48,7 +48,6 @@ where
     S: Scope<'b>,
 {
     scope: &'a mut S,
-    ph: PhantomData<&'b ()>,
     array: Handle<'b, js::JsArray>,
 }
 
@@ -67,7 +66,6 @@ where
     S: Scope<'b>,
 {
     scope: &'a mut S,
-    ph: PhantomData<&'b ()>,
     object: Handle<'b, js::JsObject>,
     key_holder: Handle<'b, js::JsObject>,
 }
@@ -78,7 +76,6 @@ where
     S: Scope<'b>,
 {
     scope: &'a mut S,
-    ph: PhantomData<&'b ()>,
     object: Handle<'b, js::JsObject>,
 }
 
@@ -290,7 +287,6 @@ where
         ArraySerializer {
             scope,
             array,
-            ph: PhantomData,
         }
     }
 }
@@ -373,7 +369,6 @@ where
             inner: ArraySerializer {
                 scope,
                 array: inner_array,
-                ph: PhantomData,
             },
         })
     }
@@ -412,7 +407,6 @@ where
             scope,
             object,
             key_holder,
-            ph: PhantomData,
         }
     }
 }
@@ -459,7 +453,6 @@ where
         StructSerializer {
             scope,
             object,
-            ph: PhantomData,
         }
     }
 }
@@ -504,7 +497,6 @@ where
             inner: StructSerializer {
                 scope,
                 object: inner_object,
-                ph: PhantomData,
             },
         })
     }
