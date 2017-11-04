@@ -84,7 +84,7 @@ pub struct StructVariantSerializer<'a, 'j, S: 'a>
 where
     S: Scope<'j>,
 {
-    outter_object: Handle<'j, js::JsObject>,
+    outer_object: Handle<'j, js::JsObject>,
     inner: StructSerializer<'a, 'j, S>,
 }
 
@@ -493,7 +493,7 @@ where
         let outter_object = js::JsObject::new(scope);
         outter_object.set(key, inner_object)?;
         Ok(StructVariantSerializer {
-            outter_object,
+            outer_object: outter_object,
             inner: StructSerializer {
                 scope,
                 object: inner_object,
@@ -523,6 +523,6 @@ where
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(self.outter_object.upcast())
+        Ok(self.outer_object.upcast())
     }
 }
