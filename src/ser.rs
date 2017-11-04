@@ -34,7 +34,7 @@ pub fn to_value<'j, V: Serialize + ?Sized, S: Scope<'j>>(
 }
 
 #[doc(hidden)]
-pub struct Serializer<'a, 'j: 'a, S: 'a>
+pub struct Serializer<'a, 'j, S: 'a>
 where
     S: Scope<'j>,
 {
@@ -43,7 +43,7 @@ where
 }
 
 #[doc(hidden)]
-pub struct ArraySerializer<'a, 'j: 'a, S: 'a>
+pub struct ArraySerializer<'a, 'j, S: 'a>
 where
     S: Scope<'j>,
 {
@@ -52,7 +52,7 @@ where
 }
 
 #[doc(hidden)]
-pub struct TupleVariantSerializer<'a, 'j: 'a, S: 'a>
+pub struct TupleVariantSerializer<'a, 'j, S: 'a>
 where
     S: Scope<'j>,
 {
@@ -61,7 +61,7 @@ where
 }
 
 #[doc(hidden)]
-pub struct MapSerializer<'a, 'j: 'a, S: 'a>
+pub struct MapSerializer<'a, 'j, S: 'a>
 where
     S: Scope<'j>,
 {
@@ -71,7 +71,7 @@ where
 }
 
 #[doc(hidden)]
-pub struct StructSerializer<'a, 'j: 'a, S: 'a>
+pub struct StructSerializer<'a, 'j, S: 'a>
 where
     S: Scope<'j>,
 {
@@ -80,7 +80,7 @@ where
 }
 
 #[doc(hidden)]
-pub struct StructVariantSerializer<'a, 'j: 'a, S: 'a>
+pub struct StructVariantSerializer<'a, 'j, S: 'a>
 where
     S: Scope<'j>,
 {
