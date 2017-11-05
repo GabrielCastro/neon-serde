@@ -13,7 +13,8 @@ use serde::de::Visitor;
 
 use neon::js::Object;
 use neon::js::Variant;
-use serde::de::{DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess};
+use neon::js::Value;
+use serde::de::{DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess, EnumAccess, VariantAccess, Unexpected};
 
 
 /// Deserialize an instance of type `T` from a `Handle<js::JsValue>`
@@ -90,11 +91,43 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         }
     }
 
+    fn deserialize_enum<V>(
+        self,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'x>,
+    {
+        match self.input.variant() {
+            Variant::String(val) => {
+                visitor.visit_enum(JsEnumAccess::new(self.scope, val.value(), None))
+            },
+            Variant::Object(val) => {
+                let prop_names = val.get_own_property_names(self.scope)?;
+                let len = prop_names.len();
+                if len != 1 {
+                    Err(ErrorKind::InvalidKeyType(
+                        format!("object key with {} properties", len),
+                    ))?
+                }
+                let key = prop_names.get(self.scope, 0)?.check::<js::JsString>()?;
+                let enum_value = val.get(self.scope, key)?;
+                visitor.visit_enum(JsEnumAccess::new(self.scope, key.value(), Some(enum_value)))
+            }
+            _ => {
+                let m = self.input.to_string(self.scope)?.value();
+                Err(ErrorKind::InvalidKeyType(m))?
+            }
+        }
+    }
+
     forward_to_deserialize_any! {
        <V: Visitor<'x>>
         bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes
         byte_buf unit unit_struct seq tuple tuple_struct map struct identifier
-        enum newtype_struct ignored_any
+        newtype_struct ignored_any
     }
 }
 
@@ -194,5 +227,112 @@ impl<'x, 'a, 'j, S: Scope<'j>> MapAccess<'x> for JsObjectAccess<'a, 'j, S> {
         let mut de = Deserializer::new(self.scope, value);
         let res = seed.deserialize(&mut de)?;
         Ok(res)
+    }
+}
+
+
+
+#[doc(hidden)]
+struct JsEnumAccess<'a, 'j, S: Scope<'j> +'a> {
+    scope: &'a mut S,
+    variant: String,
+    value: Option<Handle<'j, js::JsValue>>,
+}
+
+#[doc(hidden)]
+impl<'a, 'j, S:  Scope<'j>> JsEnumAccess<'a, 'j, S> {
+    fn new(scope: &'a mut S, key: String, value: Option<Handle<'j, js::JsValue>>) -> Self {
+        JsEnumAccess { scope, variant: key, value }
+    }
+}
+
+#[doc(hidden)]
+impl<'x, 'a, 'j, S: Scope<'j>> EnumAccess<'x> for JsEnumAccess<'a, 'j, S> {
+    type Error = LibError;
+    type Variant = JsVariantAccess<'a, 'j, S>;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
+        where
+            V: DeserializeSeed<'x>,
+    {
+        use serde::de::IntoDeserializer;
+        let variant = self.variant.into_deserializer();
+        let variant_access = JsVariantAccess::new(self.scope, self.value);
+        seed.deserialize(variant).map(|v| (v, variant_access))
+    }
+}
+
+
+#[doc(hidden)]
+struct JsVariantAccess<'a, 'j, S: Scope<'j> +'a> {
+    scope: &'a mut S,
+    value: Option<Handle<'j, js::JsValue>>,
+}
+
+#[doc(hidden)]
+impl<'a, 'j, S:  Scope<'j>> JsVariantAccess<'a, 'j, S> {
+    fn new(scope: &'a mut S, value: Option<Handle<'j, js::JsValue>>) -> Self {
+        JsVariantAccess { scope, value }
+    }
+}
+
+
+#[doc(hidden)]
+impl<'x, 'a, 'j, S: Scope<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, S> {
+    type Error = LibError;
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        match self.value {
+            Some(val) => {
+                let mut deserializer = Deserializer::new(self.scope, val);
+                serde::de::Deserialize::deserialize(&mut deserializer)
+            },
+            None => Ok(()),
+        }
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
+        where
+            T: DeserializeSeed<'x>,
+    {
+        match self.value {
+            Some(val) => {
+                let mut deserializer = Deserializer::new(self.scope, val);
+                seed.deserialize(&mut deserializer)
+            },
+            None => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"newtype variant"),),
+        }
+    }
+
+    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: Visitor<'x>,
+    {
+        match self.value.map(|v| v.variant()) {
+            Some(Variant::Array(val)) => {
+                let mut deserializer = JsArrayAccess::new(self.scope, val);
+                visitor.visit_seq(&mut deserializer)
+            }
+            Some(_) => Err(serde::de::Error::invalid_type(Unexpected::Other("JsValue"), &"tuple variant"),),
+            None => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"tuple variant"),),
+        }
+    }
+
+    fn struct_variant<V>(
+        self,
+        _fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+        where
+            V: Visitor<'x>,
+    {
+        match self.value.map(|v| v.variant()) {
+            Some(Variant::Object(val)) => {
+                let mut deserializer = JsObjectAccess::new(self.scope, val)?;
+                visitor.visit_map(&mut deserializer)
+            }
+            Some(_) => Err(serde::de::Error::invalid_type(Unexpected::Other("JsValue"), &"struct variant"),),
+            _ => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"struct variant"),),
+        }
     }
 }
