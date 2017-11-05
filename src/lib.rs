@@ -88,3 +88,25 @@ pub mod errors;
 
 pub use de::from_value;
 pub use ser::to_value;
+
+
+
+#[cfg(test)]
+mod tests {
+    use neon::mem::Handle;
+    use neon::vm::{Call, JsResult};
+    use neon::js::JsValue;
+    use super::*;
+
+    #[allow(unsed)]
+    fn test_it_compiles<'j>(call: Call<'j>) -> JsResult<'j, JsValue> {
+        let scope = call.scope;
+        let result: () = {
+            let arg: Handle<'j, JsValue> = call.arguments.require(scope, 0)?;
+            let () = from_value(scope, arg)?;
+            ()
+        };
+        let result: Handle<'j, JsValue> = to_value(&result, scope)?;
+        Ok(result)
+    }
+}
