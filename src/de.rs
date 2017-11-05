@@ -75,11 +75,15 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         }
     }
 
-    forward_to_deserialize_any! {
-       <V: Visitor<'x>>
-        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes
-        byte_buf option unit unit_struct newtype_struct tuple tuple_struct
-        struct enum identifier ignored_any
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'x>,
+    {
+        match self.input.variant() {
+            Variant::Null(_) |
+            Variant::Undefined(_) => visitor.visit_none(),
+            _ => visitor.visit_some(self),
+        }
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -96,6 +100,13 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
     {
         let input = self.input.check::<js::JsObject>()?;
         visitor.visit_map(JsObjectAccess::new(self.scope, input)?)
+    }
+
+    forward_to_deserialize_any! {
+       <V: Visitor<'x>>
+        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes
+        byte_buf unit unit_struct newtype_struct tuple tuple_struct
+        struct enum identifier ignored_any
     }
 }
 
