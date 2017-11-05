@@ -93,10 +93,10 @@ pub use ser::to_value;
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use neon::js::JsValue;
     use neon::mem::Handle;
     use neon::vm::{Call, JsResult};
-    use neon::js::JsValue;
-    use super::*;
 
     #[allow(unsed)]
     fn test_it_compiles<'j>(call: Call<'j>) -> JsResult<'j, JsValue> {

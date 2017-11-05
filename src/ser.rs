@@ -24,7 +24,7 @@ use std::marker::PhantomData;
 pub fn to_value<'j, S, V>(scope: &mut S, value: &V) -> LibResult<Handle<'j, js::JsValue>>
 where
     S: Scope<'j>,
-    V: Serialize + ?Sized
+    V: Serialize + ?Sized,
 {
     let serializer = Serializer {
         scope,
@@ -285,10 +285,7 @@ where
 {
     fn new(scope: &'a mut S) -> Self {
         let array = js::JsArray::new(scope, 0);
-        ArraySerializer {
-            scope,
-            array,
-        }
+        ArraySerializer { scope, array }
     }
 }
 
@@ -451,10 +448,7 @@ where
 {
     fn new(scope: &'a mut S) -> Self {
         let object = js::JsObject::new(scope);
-        StructSerializer {
-            scope,
-            object,
-        }
+        StructSerializer { scope, object }
     }
 }
 

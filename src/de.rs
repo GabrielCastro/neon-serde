@@ -33,7 +33,7 @@ where
 }
 
 #[doc(hidden)]
-pub struct Deserializer<'a, 'j, S: Scope<'j> +'a> {
+pub struct Deserializer<'a, 'j, S: Scope<'j> + 'a> {
     scope: &'a mut S,
     input: Handle<'j, js::JsValue>,
 }
@@ -91,8 +91,8 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where
-            V: Visitor<'x>,
+    where
+        V: Visitor<'x>,
     {
         let input = self.input.check::<js::JsObject>()?;
         visitor.visit_map(JsObjectAccess::new(self.scope, input)?)
@@ -135,7 +135,7 @@ impl<'x, 'a, 'j, S: Scope<'j>> SeqAccess<'x> for JsArrayAccess<'a, 'j, S> {
         self.idx += 1;
 
         let mut de = Deserializer::new(self.scope, v);
-        return seed.deserialize(&mut de).map(Some)
+        return seed.deserialize(&mut de).map(Some);
     }
 }
 
