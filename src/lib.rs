@@ -51,7 +51,7 @@
 //!          .require(scope, 0)?
 //!          .check::<JsValue>()?;
 //!
-//!     let arg0_value :AnObject = neon_serde::from_handle(arg0, scope)?;
+//!     let arg0_value :AnObject = neon_serde::from_value(scope, arg0)?;
 //!     println!("{:?}", arg0_value);
 //!
 //!     Ok(JsUndefined::new().upcast())
@@ -79,11 +79,12 @@ extern crate cast;
 #[macro_use]
 extern crate error_chain;
 extern crate neon;
+#[macro_use]
 extern crate serde;
 
 pub mod ser;
 pub mod de;
 pub mod errors;
 
-pub use de::from_handle;
+pub use de::from_value;
 pub use ser::to_value;
