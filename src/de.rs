@@ -12,10 +12,11 @@ use serde;
 use serde::de::Visitor;
 
 use neon::js::Object;
-use neon::js::Variant;
 use neon::js::Value;
+use neon::js::Variant;
 use neon::vm::Lock;
-use serde::de::{DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess, EnumAccess, VariantAccess, Unexpected};
+use serde::de::{DeserializeOwned, DeserializeSeed, EnumAccess, MapAccess, SeqAccess, Unexpected,
+                VariantAccess};
 
 
 /// Deserialize an instance of type `T` from a `Handle<js::JsValue>`
@@ -56,7 +57,8 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         V: Visitor<'x>,
     {
         match self.input.variant() {
-            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_unit(),
+            Variant::Null(_) |
+            Variant::Undefined(_) => visitor.visit_unit(),
             Variant::Boolean(val) => visitor.visit_bool(val.value()),
             Variant::String(val) => visitor.visit_string(val.value()),
             Variant::Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
@@ -64,11 +66,11 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
             Variant::Array(val) => {
                 let mut deserializer = JsArrayAccess::new(self.scope, val);
                 visitor.visit_seq(&mut deserializer)
-            },
+            }
             Variant::Object(val) => {
                 let mut deserializer = JsObjectAccess::new(self.scope, val)?;
                 visitor.visit_map(&mut deserializer)
-            },
+            }
             Variant::Function(_) => {
                 bail!(ErrorKind::NotImplemented(
                     "unimplemented Deserializer::Deserializer(Function)",
@@ -87,7 +89,8 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         V: Visitor<'x>,
     {
         match self.input.variant() {
-            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_none(),
+            Variant::Null(_) |
+            Variant::Undefined(_) => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
     }
@@ -104,7 +107,7 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         match self.input.variant() {
             Variant::String(val) => {
                 visitor.visit_enum(JsEnumAccess::new(self.scope, val.value(), None))
-            },
+            }
             Variant::Object(val) => {
                 let prop_names = val.get_own_property_names(self.scope)?;
                 let len = prop_names.len();
@@ -252,16 +255,20 @@ impl<'x, 'a, 'j, S: Scope<'j>> MapAccess<'x> for JsObjectAccess<'a, 'j, S> {
 
 
 #[doc(hidden)]
-struct JsEnumAccess<'a, 'j, S: Scope<'j> +'a> {
+struct JsEnumAccess<'a, 'j, S: Scope<'j> + 'a> {
     scope: &'a mut S,
     variant: String,
     value: Option<Handle<'j, js::JsValue>>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j, S:  Scope<'j>> JsEnumAccess<'a, 'j, S> {
+impl<'a, 'j, S: Scope<'j>> JsEnumAccess<'a, 'j, S> {
     fn new(scope: &'a mut S, key: String, value: Option<Handle<'j, js::JsValue>>) -> Self {
-        JsEnumAccess { scope, variant: key, value }
+        JsEnumAccess {
+            scope,
+            variant: key,
+            value,
+        }
     }
 }
 
@@ -271,8 +278,8 @@ impl<'x, 'a, 'j, S: Scope<'j>> EnumAccess<'x> for JsEnumAccess<'a, 'j, S> {
     type Variant = JsVariantAccess<'a, 'j, S>;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
-        where
-            V: DeserializeSeed<'x>,
+    where
+        V: DeserializeSeed<'x>,
     {
         use serde::de::IntoDeserializer;
         let variant = self.variant.into_deserializer();
@@ -283,13 +290,13 @@ impl<'x, 'a, 'j, S: Scope<'j>> EnumAccess<'x> for JsEnumAccess<'a, 'j, S> {
 
 
 #[doc(hidden)]
-struct JsVariantAccess<'a, 'j, S: Scope<'j> +'a> {
+struct JsVariantAccess<'a, 'j, S: Scope<'j> + 'a> {
     scope: &'a mut S,
     value: Option<Handle<'j, js::JsValue>>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j, S:  Scope<'j>> JsVariantAccess<'a, 'j, S> {
+impl<'a, 'j, S: Scope<'j>> JsVariantAccess<'a, 'j, S> {
     fn new(scope: &'a mut S, value: Option<Handle<'j, js::JsValue>>) -> Self {
         JsVariantAccess { scope, value }
     }
@@ -305,35 +312,44 @@ impl<'x, 'a, 'j, S: Scope<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, S> 
             Some(val) => {
                 let mut deserializer = Deserializer::new(self.scope, val);
                 serde::de::Deserialize::deserialize(&mut deserializer)
-            },
+            }
             None => Ok(()),
         }
     }
 
     fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
-        where
-            T: DeserializeSeed<'x>,
+    where
+        T: DeserializeSeed<'x>,
     {
         match self.value {
             Some(val) => {
                 let mut deserializer = Deserializer::new(self.scope, val);
                 seed.deserialize(&mut deserializer)
-            },
-            None => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"newtype variant"),),
+            }
+            None => Err(serde::de::Error::invalid_type(
+                Unexpected::UnitVariant,
+                &"newtype variant",
+            )),
         }
     }
 
     fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
-        where
-            V: Visitor<'x>,
+    where
+        V: Visitor<'x>,
     {
         match self.value.map(|v| v.variant()) {
             Some(Variant::Array(val)) => {
                 let mut deserializer = JsArrayAccess::new(self.scope, val);
                 visitor.visit_seq(&mut deserializer)
             }
-            Some(_) => Err(serde::de::Error::invalid_type(Unexpected::Other("JsValue"), &"tuple variant"),),
-            None => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"tuple variant"),),
+            Some(_) => Err(serde::de::Error::invalid_type(
+                Unexpected::Other("JsValue"),
+                &"tuple variant",
+            )),
+            None => Err(serde::de::Error::invalid_type(
+                Unexpected::UnitVariant,
+                &"tuple variant",
+            )),
         }
     }
 
@@ -342,16 +358,22 @@ impl<'x, 'a, 'j, S: Scope<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, S> 
         _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
-        where
-            V: Visitor<'x>,
+    where
+        V: Visitor<'x>,
     {
         match self.value.map(|v| v.variant()) {
             Some(Variant::Object(val)) => {
                 let mut deserializer = JsObjectAccess::new(self.scope, val)?;
                 visitor.visit_map(&mut deserializer)
             }
-            Some(_) => Err(serde::de::Error::invalid_type(Unexpected::Other("JsValue"), &"struct variant"),),
-            _ => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"struct variant"),),
+            Some(_) => Err(serde::de::Error::invalid_type(
+                Unexpected::Other("JsValue"),
+                &"struct variant",
+            )),
+            _ => Err(serde::de::Error::invalid_type(
+                Unexpected::UnitVariant,
+                &"struct variant",
+            )),
         }
     }
 }
