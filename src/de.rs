@@ -54,8 +54,7 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         V: Visitor<'x>,
     {
         match self.input.variant() {
-            Variant::Undefined(_) => visitor.visit_none(),
-            Variant::Null(_) => visitor.visit_unit(),
+            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_unit(),
             Variant::Boolean(val) => visitor.visit_bool(val.value()),
             Variant::String(val) => visitor.visit_string(val.value()),
             Variant::Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
@@ -80,8 +79,7 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         V: Visitor<'x>,
     {
         match self.input.variant() {
-            Variant::Null(_) |
-            Variant::Undefined(_) => visitor.visit_none(),
+            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
     }
