@@ -21,10 +21,11 @@ use std::marker::PhantomData;
 /// * `NumberCastError` trying to serialize a `u64` can fail if it overflows in a cast to `f64`
 /// * `StringTooLong` if the string exceeds v8's max string size
 ///
-pub fn to_value<'j, V: Serialize + ?Sized, S: Scope<'j>>(
-    value: &V,
-    scope: &mut S,
-) -> LibResult<Handle<'j, js::JsValue>> {
+pub fn to_value<'j, S, V>(scope: &mut S, value: &V) -> LibResult<Handle<'j, js::JsValue>>
+where
+    S: Scope<'j>,
+    V: Serialize + ?Sized
+{
     let serializer = Serializer {
         scope,
         ph: PhantomData,
@@ -222,7 +223,7 @@ where
         T: Serialize,
     {
         let obj = js::JsObject::new(&mut *self.scope);
-        let value_js = to_value(value, self.scope)?;
+        let value_js = to_value(self.scope, value)?;
         obj.set(variant, value_js)?;
 
         Ok(obj.upcast())
@@ -303,7 +304,7 @@ where
     where
         T: Serialize,
     {
-        let value = to_value(value, self.scope)?;
+        let value = to_value(self.scope, value)?;
 
         let arr: Handle<'j, js::JsArray> = self.array;
         let len = arr.len();
@@ -423,7 +424,7 @@ where
     where
         T: Serialize,
     {
-        let key = to_value(key, self.scope)?;
+        let key = to_value(self.scope, key)?;
         self.key_holder.set("key", key)?;
         Ok(())
     }
@@ -433,7 +434,7 @@ where
         T: Serialize,
     {
         let key: Handle<'j, js::JsValue> = self.key_holder.get(&mut *self.scope, "key")?;
-        let value_obj = to_value(value, self.scope)?;
+        let value_obj = to_value(self.scope, value)?;
         self.object.set(key, value_obj)?;
         Ok(())
     }
@@ -473,7 +474,7 @@ where
     where
         T: Serialize,
     {
-        let value = to_value(value, self.scope)?;
+        let value = to_value(self.scope, value)?;
         self.object.set(key, value)?;
         Ok(())
     }

@@ -65,7 +65,7 @@
 //!         c: "a string".into()
 //!     };
 //!
-//!     let js_value = neon_serde::to_value(&value, scope)?;
+//!     let js_value = neon_serde::to_value(scope, &value)?;
 //!     Ok(js_value)
 //! }
 //!
