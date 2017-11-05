@@ -8,7 +8,6 @@ extern crate serde_derive;
 use neon::js::{JsUndefined, JsValue};
 use neon::mem::Handle;
 use neon::vm::{Call, JsResult};
-use neon::scope::Scope;
 
 #[derive(Serialize, Debug, Deserialize)]
 struct AnObject {
@@ -57,7 +56,7 @@ macro_rules! make_test {
                 let scope = call.scope;
                 let value = $val;
 
-                let handle = neon_serde::to_value(&value, scope)?;
+                let handle = neon_serde::to_value(scope, &value)?;
                 Ok(handle)
             }
 
@@ -123,7 +122,7 @@ macro_rules! make_expect {
                 let arg0 = call.arguments
                     .require(scope, 0)?;
 
-                let de_serialized: $val_type = neon_serde::from_handle(arg0, scope)?;
+                let de_serialized: $val_type = neon_serde::from_value(scope, arg0)?;
                 assert_eq!(value, de_serialized);
                 Ok(JsUndefined::new().upcast())
             }

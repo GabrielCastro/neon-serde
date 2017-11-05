@@ -98,15 +98,20 @@ mod tests {
     use neon::mem::Handle;
     use neon::vm::{Call, JsResult};
 
-    #[allow(unsed)]
-    fn test_it_compiles<'j>(call: Call<'j>) -> JsResult<'j, JsValue> {
-        let scope = call.scope;
-        let result: () = {
-            let arg: Handle<'j, JsValue> = call.arguments.require(scope, 0)?;
-            let () = from_value(scope, arg)?;
-            ()
-        };
-        let result: Handle<'j, JsValue> = to_value(&result, scope)?;
-        Ok(result)
+    #[test]
+    fn test_it_compiles() {
+        fn check<'j>(call: Call<'j>) -> JsResult<'j, JsValue> {
+            let scope = call.scope;
+            let result: () = {
+                let arg: Handle<'j, JsValue> = call.arguments.require(scope, 0)?;
+                let () = from_value(scope, arg)?;
+                ()
+            };
+            let result: Handle<'j, JsValue> = to_value(scope, &result)?;
+            Ok(result)
+        }
+
+        let _ = check;
     }
+
 }
