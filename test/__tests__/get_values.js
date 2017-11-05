@@ -68,7 +68,7 @@ describe('all values ok', () => {
             c: "abc",
             d: false,
             e: null,
-            f: undefined,
+            f: null,
             g: [9, false, "efg"],
             h: '\uD83E\uDD37',
             i: "Empty",
