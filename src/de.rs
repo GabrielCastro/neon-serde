@@ -14,6 +14,7 @@ use serde::de::Visitor;
 use neon::js::Object;
 use neon::js::Variant;
 use neon::js::Value;
+use neon::vm::Lock;
 use serde::de::{DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess, EnumAccess, VariantAccess, Unexpected};
 
 
@@ -123,10 +124,28 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         }
     }
 
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'x>,
+    {
+        let mut buff = self.input.check::<js::binary::JsBuffer>()?;
+        let copy = buff.grab(|buff| Vec::from(buff.as_slice()));
+        visitor.visit_bytes(&copy)
+    }
+
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'x>,
+    {
+        let mut buff = self.input.check::<js::binary::JsBuffer>()?;
+        let copy = buff.grab(|buff| Vec::from(buff.as_slice()));
+        visitor.visit_byte_buf(copy)
+    }
+
     forward_to_deserialize_any! {
        <V: Visitor<'x>>
-        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes
-        byte_buf unit unit_struct seq tuple tuple_struct map struct identifier
+        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string
+        unit unit_struct seq tuple tuple_struct map struct identifier
         newtype_struct ignored_any
     }
 }
