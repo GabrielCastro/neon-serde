@@ -8,7 +8,7 @@ license = "MIT"
 [dependencies]
 serde = "1.*"
 error-chain = "0.11.*"
-neon = "0.1.*"
+neon = ">=0.1.21"
 cast = "0.2.*"
 
 [dev-dependencies]
