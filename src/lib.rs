@@ -51,7 +51,7 @@
 //!          .require(scope, 0)?
 //!          .check::<JsValue>()?;
 //!
-//!     let arg0_value :AnObject = neon_serde::from_handle(arg0, scope)?;
+//!     let arg0_value :AnObject = neon_serde::from_value(scope, arg0)?;
 //!     println!("{:?}", arg0_value);
 //!
 //!     Ok(JsUndefined::new().upcast())
@@ -65,7 +65,7 @@
 //!         c: "a string".into()
 //!     };
 //!
-//!     let js_value = neon_serde::to_value(&value, scope)?;
+//!     let js_value = neon_serde::to_value(scope, &value)?;
 //!     Ok(js_value)
 //! }
 //!
@@ -79,11 +79,39 @@ extern crate cast;
 #[macro_use]
 extern crate error_chain;
 extern crate neon;
+#[macro_use]
 extern crate serde;
 
 pub mod ser;
 pub mod de;
 pub mod errors;
 
-pub use de::from_handle;
+pub use de::from_value;
 pub use ser::to_value;
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use neon::js::JsValue;
+    use neon::mem::Handle;
+    use neon::vm::{Call, JsResult};
+
+    #[test]
+    fn test_it_compiles() {
+        fn check<'j>(call: Call<'j>) -> JsResult<'j, JsValue> {
+            let scope = call.scope;
+            let result: () = {
+                let arg: Handle<'j, JsValue> = call.arguments.require(scope, 0)?;
+                let () = from_value(scope, arg)?;
+                ()
+            };
+            let result: Handle<'j, JsValue> = to_value(scope, &result)?;
+            Ok(result)
+        }
+
+        let _ = check;
+    }
+
+}
