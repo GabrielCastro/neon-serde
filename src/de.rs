@@ -61,7 +61,6 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
             Variant::Undefined(_) => visitor.visit_unit(),
             Variant::Boolean(val) => visitor.visit_bool(val.value()),
             Variant::String(val) => visitor.visit_string(val.value()),
-            Variant::Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
             Variant::Number(val) => visitor.visit_f64(val.value()),
             Variant::Array(val) => {
                 let mut deserializer = JsArrayAccess::new(self.scope, val);
