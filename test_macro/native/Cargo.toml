@@ -1,0 +1,21 @@
+[package]
+name = "test"
+version = "0.1.0"
+authors = ["Gabriel Castro <dev@GabrielCastro.ca>"]
+license = "MIT"
+build = "build.rs"
+publish = false
+
+[lib]
+name = "test"
+crate-type = ["dylib"]
+
+[build-dependencies]
+neon-build = "0.1.18"
+
+[dependencies]
+neon = "0.1.18"
+neon-serde = { path = "../../" }
+serde_derive = "1.0.0"
+serde = "1.0.0"
+serde_bytes = "0.10.1"
