@@ -24,8 +24,45 @@ a type implementing `serde::Deserialize`
 Convert a value implementing `serde::Serialize` to
 a `Handle<JsValue>`
 
+## Export Macro example
+The export! macro allows you to quickly define functions automatically convert thier arguments
 
-## Example
+```rust,no_run
+
+#[macro_use]
+extern crate neon;
+#[macro_use]
+extern crate neon_serde;
+#[macro_use]
+extern crate serde_derive;
+
+#[derive(Deserialize)]
+struct User {
+    name: String,
+    age: u16,
+}
+
+export! {
+    fn say_hello(name: String) -> String {
+        format!("Hello, {}!", name)
+    }
+
+    fn greet(user: User) -> String {
+        format!("{} is {} years old", user.name, user.age)
+    }
+
+    fn fibonacci(n: i32) -> i32 {
+        match n {
+            1 | 2 => 1,
+            n => fibonacci(n - 1) + fibonacci(n - 2)
+        }
+    }
+}
+
+```
+
+
+## Direct Usage Example
 
 ```rust,no_run
 extern crate neon_serde;
@@ -68,3 +105,8 @@ fn serialize_something(call: Call) -> JsResult<JsValue> {
 }
 
 ```
+
+## Limitations
+
+### Data ownership
+All Deserialize Values must own all thier data (they must have the trait `serde::DererializeOwned`)
