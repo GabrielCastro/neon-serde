@@ -86,6 +86,8 @@ pub mod ser;
 pub mod de;
 pub mod errors;
 
+mod macros;
+
 pub use de::from_value;
 pub use ser::to_value;
 

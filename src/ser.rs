@@ -21,6 +21,7 @@ use std::marker::PhantomData;
 /// * `NumberCastError` trying to serialize a `u64` can fail if it overflows in a cast to `f64`
 /// * `StringTooLong` if the string exceeds v8's max string size
 ///
+#[inline]
 pub fn to_value<'j, S, V>(scope: &mut S, value: &V) -> LibResult<Handle<'j, js::JsValue>>
 where
     S: Scope<'j>,
@@ -106,46 +107,57 @@ where
     type SerializeStructVariant = StructVariantSerializer<'a, 'j, S>;
 
 
+    #[inline]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsBoolean::new(self.scope, v).upcast())
     }
 
+    #[inline]
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, cast::f64(v)).upcast())
     }
 
+    #[inline]
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNumber::new(self.scope, v).upcast())
     }
@@ -159,6 +171,7 @@ where
         Ok(js_str.upcast())
     }
 
+    #[inline]
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
         let len = v.len();
         let js_str = js::JsString::new(self.scope, v).ok_or_else(|| {
@@ -167,16 +180,19 @@ where
         Ok(js_str.upcast())
     }
 
+    #[inline]
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
         let mut buff = js::binary::JsBuffer::new(self.scope, cast::u32(v.len())?)?;
         buff.grab(|mut buff| buff.as_mut_slice().clone_from_slice(v));
         Ok(buff.upcast())
     }
 
+    #[inline]
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNull::new().upcast())
     }
 
+    #[inline]
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize,
@@ -184,14 +200,17 @@ where
         value.serialize(self)
     }
 
+    #[inline]
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNull::new().upcast())
     }
 
+    #[inline]
     fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsNull::new().upcast())
     }
 
+    #[inline]
     fn serialize_unit_variant(
         self,
         _name: &'static str,
@@ -201,6 +220,7 @@ where
         self.serialize_str(variant)
     }
 
+    #[inline]
     fn serialize_newtype_struct<T: ?Sized>(
         self,
         _name: &'static str,
@@ -212,6 +232,7 @@ where
         value.serialize(self)
     }
 
+    #[inline]
     fn serialize_newtype_variant<T: ?Sized>(
         self,
         _name: &'static str,
@@ -229,14 +250,17 @@ where
         Ok(obj.upcast())
     }
 
+    #[inline]
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         Ok(ArraySerializer::new(self.scope))
     }
 
+    #[inline]
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
         Ok(ArraySerializer::new(self.scope))
     }
 
+    #[inline]
     fn serialize_tuple_struct(
         self,
         _name: &'static str,
@@ -245,6 +269,7 @@ where
         Ok(ArraySerializer::new(self.scope))
     }
 
+    #[inline]
     fn serialize_tuple_variant(
         self,
         _name: &'static str,
@@ -255,10 +280,12 @@ where
         TupleVariantSerializer::new(self.scope, variant)
     }
 
+    #[inline]
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
         Ok(MapSerializer::new(self.scope))
     }
 
+    #[inline]
     fn serialize_struct(
         self,
         _name: &'static str,
@@ -267,6 +294,7 @@ where
         Ok(StructSerializer::new(self.scope))
     }
 
+    #[inline]
     fn serialize_struct_variant(
         self,
         _name: &'static str,
@@ -283,6 +311,7 @@ impl<'a, 'j, S> ArraySerializer<'a, 'j, S>
 where
     S: Scope<'j>,
 {
+    #[inline]
     fn new(scope: &'a mut S) -> Self {
         let array = js::JsArray::new(scope, 0);
         ArraySerializer { scope, array }
@@ -309,6 +338,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(self.array.upcast())
     }
@@ -321,6 +351,7 @@ where
     type Ok = Handle<'j, js::JsValue>;
     type Error = Error;
 
+    #[inline]
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
@@ -328,6 +359,7 @@ where
         ser::SerializeSeq::serialize_element(self, value)
     }
 
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         ser::SerializeSeq::end(self)
     }
@@ -341,6 +373,7 @@ where
     type Ok = Handle<'j, js::JsValue>;
     type Error = Error;
 
+    #[inline]
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
@@ -348,6 +381,7 @@ where
         ser::SerializeSeq::serialize_element(self, value)
     }
 
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         ser::SerializeSeq::end(self)
     }
@@ -380,6 +414,7 @@ where
     type Ok = Handle<'j, js::JsValue>;
     type Error = Error;
 
+    #[inline]
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
@@ -388,6 +423,7 @@ where
         self.inner.serialize_element(value)
     }
 
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(self.outter_object.upcast())
     }
@@ -436,6 +472,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(self.object.upcast())
     }
@@ -446,6 +483,7 @@ impl<'a, 'j, S> StructSerializer<'a, 'j, S>
 where
     S: Scope<'j>,
 {
+    #[inline]
     fn new(scope: &'a mut S) -> Self {
         let object = js::JsObject::new(scope);
         StructSerializer { scope, object }
@@ -460,6 +498,7 @@ where
     type Ok = Handle<'j, js::JsValue>;
     type Error = Error;
 
+    #[inline]
     fn serialize_field<T: ?Sized>(
         &mut self,
         key: &'static str,
@@ -473,6 +512,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(self.object.upcast())
     }
@@ -505,6 +545,7 @@ where
     type Ok = Handle<'j, js::JsValue>;
     type Error = Error;
 
+    #[inline]
     fn serialize_field<T: ?Sized>(
         &mut self,
         key: &'static str,
@@ -517,6 +558,7 @@ where
         self.inner.serialize_field(key, value)
     }
 
+    #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(self.outer_object.upcast())
     }
