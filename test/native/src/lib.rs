@@ -30,7 +30,6 @@ enum TypeEnum {
     Value(Vec<char>),
 }
 
-
 #[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
 struct AnObjectTwo {
     a: u32,

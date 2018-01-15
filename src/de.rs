@@ -18,7 +18,6 @@ use neon::vm::Lock;
 use serde::de::{DeserializeOwned, DeserializeSeed, EnumAccess, MapAccess, SeqAccess, Unexpected,
                 VariantAccess};
 
-
 /// Deserialize an instance of type `T` from a `Handle<js::JsValue>`
 ///
 /// # Errors
@@ -57,8 +56,7 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         V: Visitor<'x>,
     {
         match self.input.variant() {
-            Variant::Null(_) |
-            Variant::Undefined(_) => visitor.visit_unit(),
+            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_unit(),
             Variant::Boolean(val) => visitor.visit_bool(val.value()),
             Variant::String(val) => visitor.visit_string(val.value()),
             Variant::Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
@@ -89,8 +87,7 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         V: Visitor<'x>,
     {
         match self.input.variant() {
-            Variant::Null(_) |
-            Variant::Undefined(_) => visitor.visit_none(),
+            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
     }
@@ -112,9 +109,10 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
                 let prop_names = val.get_own_property_names(self.scope)?;
                 let len = prop_names.len();
                 if len != 1 {
-                    Err(ErrorKind::InvalidKeyType(
-                        format!("object key with {} properties", len),
-                    ))?
+                    Err(ErrorKind::InvalidKeyType(format!(
+                        "object key with {} properties",
+                        len
+                    )))?
                 }
                 let key = prop_names.get(self.scope, 0)?.check::<js::JsString>()?;
                 let enum_value = val.get(self.scope, key)?;
@@ -252,8 +250,6 @@ impl<'x, 'a, 'j, S: Scope<'j>> MapAccess<'x> for JsObjectAccess<'a, 'j, S> {
     }
 }
 
-
-
 #[doc(hidden)]
 struct JsEnumAccess<'a, 'j, S: Scope<'j> + 'a> {
     scope: &'a mut S,
@@ -288,7 +284,6 @@ impl<'x, 'a, 'j, S: Scope<'j>> EnumAccess<'x> for JsEnumAccess<'a, 'j, S> {
     }
 }
 
-
 #[doc(hidden)]
 struct JsVariantAccess<'a, 'j, S: Scope<'j> + 'a> {
     scope: &'a mut S,
@@ -301,7 +296,6 @@ impl<'a, 'j, S: Scope<'j>> JsVariantAccess<'a, 'j, S> {
         JsVariantAccess { scope, value }
     }
 }
-
 
 #[doc(hidden)]
 impl<'x, 'a, 'j, S: Scope<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, S> {
