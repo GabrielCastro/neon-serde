@@ -186,7 +186,7 @@ impl<'x, 'a, 'j, S: Scope<'j>> SeqAccess<'x> for JsArrayAccess<'a, 'j, S> {
         self.idx += 1;
 
         let mut de = Deserializer::new(self.scope, v);
-        return seed.deserialize(&mut de).map(Some);
+        seed.deserialize(&mut de).map(Some)
     }
 }
 
