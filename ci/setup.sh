@@ -8,8 +8,7 @@ if [[ "$(uname)" = "Darwin" ]] ; then
     brew install yarn
 fi
 
-which rustfmt || cargo install rustfmt
-
 if [[ "${TRAVIS_RUST_VERSION:-}" = "nightly" ]] ; then
-    which cargo-clippy || cargo install clippy
+    cargo install clippy --force
+    cargo install rustfmt-nightly --force
 fi

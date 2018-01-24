@@ -16,3 +16,11 @@ serde_derive = "1.*"
 
 [badges]
 travis-ci = { repository = "GabrielCastro/neon-serde" }
+
+[profile.dev]
+codegen-units = 4
+lto = false  
+
+[profile.release]
+codegen-units = 4
+lto = false  

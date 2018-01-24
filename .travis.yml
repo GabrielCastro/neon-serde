@@ -23,6 +23,7 @@ os:
   - osx
 
 before_install:
+  - export PATH="$PATH:$HOME/.cargo/bin"
   - source $HOME/.nvm/nvm.sh
   - nvm install ${TRAVIS_NODE_VERSION}
   - nvm use ${TRAVIS_NODE_VERSION}

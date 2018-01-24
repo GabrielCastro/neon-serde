@@ -1,3 +1,7 @@
+//!
+//! Defines macros for easily exporting functions
+//!
+
 #[macro_export]
 macro_rules! export {
     (

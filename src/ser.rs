@@ -106,7 +106,6 @@ where
     type SerializeStruct = StructSerializer<'a, 'j, S>;
     type SerializeStructVariant = StructVariantSerializer<'a, 'j, S>;
 
-
     #[inline]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         Ok(js::JsBoolean::new(self.scope, v).upcast())
@@ -165,18 +164,15 @@ where
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
         let mut b = [0; 4];
         let result = v.encode_utf8(&mut b);
-        let js_str = js::JsString::new(self.scope, result).ok_or_else(|| {
-            ErrorKind::StringTooLongForChar(4)
-        })?;
+        let js_str = js::JsString::new(self.scope, result)
+            .ok_or_else(|| ErrorKind::StringTooLongForChar(4))?;
         Ok(js_str.upcast())
     }
 
     #[inline]
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
         let len = v.len();
-        let js_str = js::JsString::new(self.scope, v).ok_or_else(|| {
-            ErrorKind::StringTooLong(len)
-        })?;
+        let js_str = js::JsString::new(self.scope, v).ok_or_else(|| ErrorKind::StringTooLong(len))?;
         Ok(js_str.upcast())
     }
 

@@ -19,3 +19,11 @@ neon-serde = { path = "../../" }
 serde_derive = "1.0.0"
 serde = "1.0.0"
 serde_bytes = "0.10.1"
+
+[profile.dev]
+codegen-units = 4
+lto = false  
+
+[profile.release]
+codegen-units = 4
+lto = false  

@@ -10,7 +10,6 @@
     "neon-cli": "^0.1.20"
   },
   "scripts": {
-    "install": "neon build",
     "build": "neon build",
     "build:debug": "neon build --debug",
     "test": "neon build --debug && jest -i"
