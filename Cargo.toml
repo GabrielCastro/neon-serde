@@ -1,9 +1,10 @@
 [package]
 name = "neon-serde"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Gabriel Castro <dev@GabrielCastro.ca>"]
 description = "Easily serialize object for use with neon"
 license = "MIT"
+repository = "https://github.com/GabrielCastro/neon-serde"
 
 [dependencies]
 serde = "1.*"
@@ -16,11 +17,3 @@ serde_derive = "1.*"
 
 [badges]
 travis-ci = { repository = "GabrielCastro/neon-serde" }
-
-[profile.dev]
-codegen-units = 4
-lto = false  
-
-[profile.release]
-codegen-units = 4
-lto = false  
