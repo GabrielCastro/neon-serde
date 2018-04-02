@@ -62,7 +62,7 @@ describe('all values ok', () => {
     });
 
     test('expect_obj', () => {
-        native.expect_obj({
+        const o = {
             a: 1,
             b: [1, 2],
             c: "abc",
@@ -77,7 +77,11 @@ describe('all values ok', () => {
             l: "jkl",
             m: [0,1,2,3,4],
             o: {Value: ['z', 'y', 'x']}
-        });
+        };
+
+        o.self = o;
+
+        native.expect_obj(o);
     });
 
     test('expect_num_array', () => {
