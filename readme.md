@@ -86,7 +86,7 @@ fn deserialize_something(call: Call) -> JsResult<JsValue> {
          .require(scope, 0)?
          .check::<JsValue>()?;
 
-    let arg0_value :AnObject = neon_serde::from_handle(arg0, scope)?;
+    let arg0_value :AnObject = neon_serde::from_value(scope, arg0)?;
     println!("{:?}", arg0_value);
 
     Ok(JsUndefined::new().upcast())
@@ -100,7 +100,7 @@ fn serialize_something(call: Call) -> JsResult<JsValue> {
         c: "a string".into()
     };
 
-    let js_value = neon_serde::to_value(&value, scope)?;
+    let js_value = neon_serde::to_value(scope, &value)?;
     Ok(js_value)
 }
 
