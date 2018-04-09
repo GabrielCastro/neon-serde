@@ -143,11 +143,18 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
         visitor.visit_byte_buf(copy)
     }
 
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'x>,
+    {
+        visitor.visit_unit()
+    }
+
     forward_to_deserialize_any! {
        <V: Visitor<'x>>
         bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string
         unit unit_struct seq tuple tuple_struct map struct identifier
-        newtype_struct ignored_any
+        newtype_struct
     }
 }
 
