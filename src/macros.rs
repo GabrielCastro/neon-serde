@@ -3,15 +3,17 @@
 //!
 
 #[macro_export]
-macro_rules! export {
+macro_rules! create_export_functions {
     (
-        $( fn $name:ident($( $arg:ident : $atype:ty ),*) -> $ret:ty $code:block )*
+        $export_func_name:ident, {
+            $( fn $name:ident($( $arg:ident : $atype:ty ),*) -> $ret:ty $code:block )*
+        }
     ) => (
         $(
             fn $name($( $arg: $atype ),*) -> $ret $code
         )*
 
-        register_module!(m, {
+        fn $export_func_name(mut m: ::neon::vm::Module) -> ::neon::vm::VmResult<::neon::vm::Module> {
             $(
                 m.export(stringify!($name), |call| {
                     let scope = call.scope;
@@ -30,6 +32,26 @@ macro_rules! export {
                     Ok(handle)
                 })?;
             )*
+        
+            Ok(m)
+        }
+    )
+}
+
+#[macro_export]
+macro_rules! export {
+    (
+        $( fn $name:ident($( $arg:ident : $atype:ty ),*) -> $ret:ty $code:block )*
+    ) => (
+
+        create_export_functions! (_neon_serde_default_export_func, {
+            $(
+                fn $name($( $arg: $atype ),*) -> $ret $code
+            )*
+        });
+
+        register_module!(m, {
+            let mut m = _neon_serde_default_export_func(&mut m)?;
             Ok(())
         });
     )

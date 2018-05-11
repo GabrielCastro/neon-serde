@@ -17,9 +17,3 @@ cd test
 yarn install
 yarn run build:debug
 yarn test
-
-cd ../test_macro
-
-yarn install
-yarn run build:debug
-yarn test

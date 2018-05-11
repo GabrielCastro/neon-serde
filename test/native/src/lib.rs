@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate neon;
+#[macro_use]
 extern crate neon_serde;
 extern crate serde_bytes;
 #[macro_use]
@@ -164,7 +165,32 @@ make_expect!(
     serde_bytes::ByteBuf
 );
 
+#[derive(Deserialize)]
+struct User {
+    name: String,
+    age: u16,
+}
+
+create_export_functions! (generated_exports, {
+    fn say_hello(name: String) -> String {
+        format!("Hello, {}!", name)
+    }
+
+    fn greet(user: User) -> String {
+        format!("{} is {} years old", user.name, user.age)
+    }
+
+    fn fibonacci(n: i32) -> i32 {
+        match n {
+            1 | 2 => 1,
+            n => fibonacci(n - 1) + fibonacci(n - 2)
+        }
+    }
+});
+
 register_module!(m, {
+    let mut m = generated_exports(m)?;
+
     m.export("make_num_77", make_num_77)?;
     m.export("make_num_32", make_num_32)?;
     m.export("make_str_hello", make_str_hello)?;
