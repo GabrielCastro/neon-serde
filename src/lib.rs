@@ -82,9 +82,9 @@ extern crate neon;
 #[macro_use]
 extern crate serde;
 
-pub mod ser;
 pub mod de;
 pub mod errors;
+pub mod ser;
 
 mod macros;
 

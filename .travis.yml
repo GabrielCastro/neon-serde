@@ -14,10 +14,6 @@ env:
     - TRAVIS_NODE_VERSION="8"
     - TRAVIS_NODE_VERSION="6"
 
-matrix:
-  allow_failures:
-    - rust: nightly
-
 os:
   - linux
   - osx

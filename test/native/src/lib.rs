@@ -119,8 +119,7 @@ macro_rules! make_expect {
             fn inner(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
                 let scope = call.scope;
                 let value = $val;
-                let arg0 = call.arguments
-                    .require(scope, 0)?;
+                let arg0 = call.arguments.require(scope, 0)?;
 
                 let de_serialized: $val_type = neon_serde::from_value(scope, arg0)?;
                 assert_eq!(value, de_serialized);
@@ -171,7 +170,7 @@ struct User {
     age: u16,
 }
 
-create_export_functions! (generated_exports, {
+create_export_functions!(generated_exports, {
     fn say_hello(name: String) -> String {
         format!("Hello, {}!", name)
     }
@@ -183,13 +182,13 @@ create_export_functions! (generated_exports, {
     fn fibonacci(n: i32) -> i32 {
         match n {
             1 | 2 => 1,
-            n => fibonacci(n - 1) + fibonacci(n - 2)
+            n => fibonacci(n - 1) + fibonacci(n - 2),
         }
     }
 });
 
 register_module!(m, {
-    let mut m = generated_exports(m)?;
+    m = generated_exports(m)?;
 
     m.export("make_num_77", make_num_77)?;
     m.export("make_num_32", make_num_32)?;

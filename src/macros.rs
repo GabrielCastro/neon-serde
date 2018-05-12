@@ -32,7 +32,7 @@ macro_rules! create_export_functions {
                     Ok(handle)
                 })?;
             )*
-        
+
             Ok(m)
         }
     )
