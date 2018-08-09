@@ -10,9 +10,9 @@
     "neon-cli": "^0.2.0"
   },
   "scripts": {
-    "build": "neon build",
-    "build:debug": "neon build --debug",
-    "test": "neon build --debug && jest -i"
+    "build": "neon build --release",
+    "build:debug": "neon build",
+    "test": "neon build && jest -i"
   },
   "jest": {
     "verbose": true,
