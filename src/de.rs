@@ -54,7 +54,12 @@ impl<'x, 'd, 'a, 'j> serde::de::Deserializer<'x> for &'d mut Deserializer<'a, 'j
         } else if let Ok(val) = self.input.downcast::<JsString>() {
             visitor.visit_string(val.value())
         } else if let Ok(val) = self.input.downcast::<JsNumber>() {
-            visitor.visit_f64(val.value())
+            let v = val.value();
+            if v.trunc() == v {
+                visitor.visit_i64(v as i64)
+            } else {
+                visitor.visit_f64(v)
+            }
         } else if let Ok(val) = self.input.downcast::<JsArray>() {
             let mut deserializer = JsArrayAccess::new(self.cx, val);
             visitor.visit_seq(&mut deserializer)
