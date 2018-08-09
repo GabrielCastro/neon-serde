@@ -1,6 +1,8 @@
 //! Defines error handling types used by the create
 //! uses the `error-chain` create for generation
 
+extern crate neon_runtime;
+
 use neon;
 use serde::{de, ser};
 use std::convert::From;
@@ -58,12 +60,14 @@ error_chain! {
             description("Not Implemented")
             display("Not Implemented: '{}'", name)
         }
+        /// A JS exception was thrown
+        Js(throw: neon::result::Throw) {
+            description("JS exception")
+            display("JS exception")
+        }
     }
 
     foreign_links {
-        Js(neon::vm::Throw)
-         #[doc = r"An error coming outside of this crate"]
-         #[doc = r"Can occur if a property getter throws and exception"];
         NumberCastError(::cast::Error)
         #[doc = r"occurs when deserializing a number would cause an over/under flow"];
     }
@@ -82,12 +86,21 @@ impl de::Error for Error {
 }
 
 #[allow(use_debug)]
-impl From<Error> for neon::vm::Throw {
+impl From<Error> for neon::result::Throw {
     fn from(err: Error) -> Self {
         if let ErrorKind::Js(_) = *err.kind() {
-            return neon::vm::Throw;
+            return neon::result::Throw;
         };
         let msg = format!("{:?}", err);
-        neon::js::error::JsError::throw::<()>(neon::js::error::Kind::Error, &msg).unwrap_err()
+        unsafe {
+            neon_runtime::error::throw_error_from_utf8(msg.as_ptr(), msg.len() as i32);
+            neon::result::Throw
+        }
+    }
+}
+
+impl From<neon::result::Throw> for Error {
+    fn from(throw: neon::result::Throw) -> Self {
+        ErrorKind::Js(throw).into()
     }
 }

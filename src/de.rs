@@ -5,80 +5,66 @@
 use errors::Error as LibError;
 use errors::ErrorKind;
 use errors::Result as LibResult;
-use neon::js;
-use neon::mem::Handle;
-use neon::scope::Scope;
+use neon::prelude::*;
 use serde;
 use serde::de::Visitor;
-
-use neon::js::Object;
-use neon::js::Value;
-use neon::js::Variant;
-use neon::vm::Lock;
 use serde::de::{DeserializeOwned, DeserializeSeed, EnumAccess, MapAccess, SeqAccess, Unexpected,
                 VariantAccess};
 
-/// Deserialize an instance of type `T` from a `Handle<js::JsValue>`
+/// Deserialize an instance of type `T` from a `Handle<JsValue>`
 ///
 /// # Errors
 ///
 /// Can fail for various reasons see `ErrorKind`
 ///
-pub fn from_value<'j, S, T>(scope: &mut S, value: Handle<'j, js::JsValue>) -> LibResult<T>
+pub fn from_value<'j, T>(cx: &mut CallContext<'j, JsObject>, value: Handle<'j, JsValue>) -> LibResult<T>
 where
-    S: Scope<'j>,
     T: DeserializeOwned + ?Sized,
 {
-    let mut deserializer: Deserializer<S> = Deserializer::new(scope, value);
+    let mut deserializer: Deserializer = Deserializer::new(cx, value);
     let t = T::deserialize(&mut deserializer)?;
     Ok(t)
 }
 
 #[doc(hidden)]
-pub struct Deserializer<'a, 'j, S: Scope<'j> + 'a> {
-    scope: &'a mut S,
-    input: Handle<'j, js::JsValue>,
+pub struct Deserializer<'a, 'j: 'a> {
+    cx: &'a mut FunctionContext<'j>,
+    input: Handle<'j, JsValue>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j, S: Scope<'j>> Deserializer<'a, 'j, S> {
-    fn new(scope: &'a mut S, input: Handle<'j, js::JsValue>) -> Self {
-        Deserializer { scope, input }
+impl<'a, 'j> Deserializer<'a, 'j> {
+    fn new(cx: &'a mut FunctionContext<'j>, input: Handle<'j, JsValue>) -> Self {
+        Deserializer { cx, input }
     }
 }
 
 #[doc(hidden)]
-impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deserializer<'a, 'j, S> {
+impl<'x, 'd, 'a, 'j> serde::de::Deserializer<'x> for &'d mut Deserializer<'a, 'j> {
     type Error = LibError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'x>,
     {
-        match self.input.variant() {
-            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_unit(),
-            Variant::Boolean(val) => visitor.visit_bool(val.value()),
-            Variant::String(val) => visitor.visit_string(val.value()),
-            Variant::Integer(val) => visitor.visit_i64(val.value()), // TODO is u32 or i32,
-            Variant::Number(val) => visitor.visit_f64(val.value()),
-            Variant::Array(val) => {
-                let mut deserializer = JsArrayAccess::new(self.scope, val);
-                visitor.visit_seq(&mut deserializer)
-            }
-            Variant::Object(val) => {
-                let mut deserializer = JsObjectAccess::new(self.scope, val)?;
-                visitor.visit_map(&mut deserializer)
-            }
-            Variant::Function(_) => {
-                bail!(ErrorKind::NotImplemented(
-                    "unimplemented Deserializer::Deserializer(Function)",
-                ));
-            }
-            Variant::Other(_) => {
-                bail!(ErrorKind::NotImplemented(
-                    "unimplemented Deserializer::Deserializer(Other)",
-                ));
-            }
+        if self.input.downcast::<JsNull>().is_ok() || self.input.downcast::<JsUndefined>().is_ok() {
+            visitor.visit_unit()
+        } else if let Ok(val) = self.input.downcast::<JsBoolean>() {
+            visitor.visit_bool(val.value())
+        } else if let Ok(val) = self.input.downcast::<JsString>() {
+            visitor.visit_string(val.value())
+        } else if let Ok(val) = self.input.downcast::<JsNumber>() {
+            visitor.visit_f64(val.value())
+        } else if let Ok(val) = self.input.downcast::<JsArray>() {
+            let mut deserializer = JsArrayAccess::new(self.cx, val);
+            visitor.visit_seq(&mut deserializer)
+        } else if let Ok(val) = self.input.downcast::<JsObject>() {
+            let mut deserializer = JsObjectAccess::new(self.cx, val)?;
+            visitor.visit_map(&mut deserializer)
+        } else {
+            bail!(ErrorKind::NotImplemented(
+                "unimplemented Deserializer::Deserializer",
+            ));
         }
     }
 
@@ -86,9 +72,10 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
     where
         V: Visitor<'x>,
     {
-        match self.input.variant() {
-            Variant::Null(_) | Variant::Undefined(_) => visitor.visit_none(),
-            _ => visitor.visit_some(self),
+        if self.input.downcast::<JsNull>().is_ok() || self.input.downcast::<JsUndefined>().is_ok() {
+            visitor.visit_none()
+        } else {
+            visitor.visit_some(self)
         }
     }
 
@@ -101,27 +88,23 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
     where
         V: Visitor<'x>,
     {
-        match self.input.variant() {
-            Variant::String(val) => {
-                visitor.visit_enum(JsEnumAccess::new(self.scope, val.value(), None))
+        if let Ok(val) = self.input.downcast::<JsString>() {
+            visitor.visit_enum(JsEnumAccess::new(self.cx, val.value(), None))
+        } else if let Ok(val) = self.input.downcast::<JsObject>() {
+            let prop_names = val.get_own_property_names(self.cx)?;
+            let len = prop_names.len();
+            if len != 1 {
+                Err(ErrorKind::InvalidKeyType(format!(
+                    "object key with {} properties",
+                    len
+                )))?
             }
-            Variant::Object(val) => {
-                let prop_names = val.get_own_property_names(self.scope)?;
-                let len = prop_names.len();
-                if len != 1 {
-                    Err(ErrorKind::InvalidKeyType(format!(
-                        "object key with {} properties",
-                        len
-                    )))?
-                }
-                let key = prop_names.get(self.scope, 0)?.check::<js::JsString>()?;
-                let enum_value = val.get(self.scope, key)?;
-                visitor.visit_enum(JsEnumAccess::new(self.scope, key.value(), Some(enum_value)))
-            }
-            _ => {
-                let m = self.input.to_string(self.scope)?.value();
-                Err(ErrorKind::InvalidKeyType(m))?
-            }
+            let key = prop_names.get(self.cx, 0)?.downcast::<JsString>().or_throw(self.cx)?;
+            let enum_value = val.get(self.cx, key)?;
+            visitor.visit_enum(JsEnumAccess::new(self.cx, key.value(), Some(enum_value)))
+        } else {
+            let m = self.input.to_string(self.cx)?.value();
+            Err(ErrorKind::InvalidKeyType(m))?
         }
     }
 
@@ -129,8 +112,8 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
     where
         V: Visitor<'x>,
     {
-        let mut buff = self.input.check::<js::binary::JsBuffer>()?;
-        let copy = buff.grab(|buff| Vec::from(buff.as_slice()));
+        let buff = self.input.downcast::<JsBuffer>().or_throw(self.cx)?;
+        let copy = self.cx.borrow(&buff, |buff| Vec::from(buff.as_slice()));
         visitor.visit_bytes(&copy)
     }
 
@@ -138,8 +121,8 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
     where
         V: Visitor<'x>,
     {
-        let mut buff = self.input.check::<js::binary::JsBuffer>()?;
-        let copy = buff.grab(|buff| Vec::from(buff.as_slice()));
+        let buff = self.input.downcast::<JsBuffer>().or_throw(self.cx)?;
+        let copy = self.cx.borrow(&buff, |buff| Vec::from(buff.as_slice()));
         visitor.visit_byte_buf(copy)
     }
 
@@ -159,18 +142,18 @@ impl<'x, 'd, 'a, 'j, S: Scope<'j>> serde::de::Deserializer<'x> for &'d mut Deser
 }
 
 #[doc(hidden)]
-struct JsArrayAccess<'a, 'j, S: Scope<'j> + 'a> {
-    scope: &'a mut S,
-    input: Handle<'j, js::JsArray>,
+struct JsArrayAccess<'a, 'j: 'a> {
+    cx: &'a mut FunctionContext<'j>,
+    input: Handle<'j, JsArray>,
     idx: u32,
     len: u32,
 }
 
 #[doc(hidden)]
-impl<'a, 'j, S: Scope<'j>> JsArrayAccess<'a, 'j, S> {
-    fn new(scope: &'a mut S, input: Handle<'j, js::JsArray>) -> Self {
+impl<'a, 'j> JsArrayAccess<'a, 'j> {
+    fn new(cx: &'a mut FunctionContext<'j>, input: Handle<'j, JsArray>) -> Self {
         JsArrayAccess {
-            scope,
+            cx,
             input,
             idx: 0,
             len: input.len(),
@@ -179,7 +162,7 @@ impl<'a, 'j, S: Scope<'j>> JsArrayAccess<'a, 'j, S> {
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j, S: Scope<'j>> SeqAccess<'x> for JsArrayAccess<'a, 'j, S> {
+impl<'x, 'a, 'j> SeqAccess<'x> for JsArrayAccess<'a, 'j> {
     type Error = LibError;
 
     fn next_element_seed<T>(&mut self, seed: T) -> LibResult<Option<T::Value>>
@@ -189,31 +172,31 @@ impl<'x, 'a, 'j, S: Scope<'j>> SeqAccess<'x> for JsArrayAccess<'a, 'j, S> {
         if self.idx >= self.len {
             return Ok(None);
         }
-        let v = self.input.get(self.scope, self.idx)?;
+        let v = self.input.get(self.cx, self.idx)?;
         self.idx += 1;
 
-        let mut de = Deserializer::new(self.scope, v);
+        let mut de = Deserializer::new(self.cx, v);
         seed.deserialize(&mut de).map(Some)
     }
 }
 
 #[doc(hidden)]
-struct JsObjectAccess<'a, 'j, S: Scope<'j> + 'a> {
-    scope: &'a mut S,
-    input: Handle<'j, js::JsObject>,
-    prop_names: Handle<'j, js::JsArray>,
+struct JsObjectAccess<'a, 'j: 'a> {
+    cx: &'a mut FunctionContext<'j>,
+    input: Handle<'j, JsObject>,
+    prop_names: Handle<'j, JsArray>,
     idx: u32,
     len: u32,
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j, S: Scope<'j>> JsObjectAccess<'a, 'j, S> {
-    fn new(scope: &'a mut S, input: Handle<'j, js::JsObject>) -> LibResult<Self> {
-        let prop_names = input.get_own_property_names(scope)?;
+impl<'x, 'a, 'j> JsObjectAccess<'a, 'j> {
+    fn new(cx: &'a mut FunctionContext<'j>, input: Handle<'j, JsObject>) -> LibResult<Self> {
+        let prop_names = input.get_own_property_names(cx)?;
         let len = prop_names.len();
 
         Ok(JsObjectAccess {
-            scope,
+            cx,
             input,
             prop_names,
             idx: 0,
@@ -223,7 +206,7 @@ impl<'x, 'a, 'j, S: Scope<'j>> JsObjectAccess<'a, 'j, S> {
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j, S: Scope<'j>> MapAccess<'x> for JsObjectAccess<'a, 'j, S> {
+impl<'x, 'a, 'j> MapAccess<'x> for JsObjectAccess<'a, 'j> {
     type Error = LibError;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
@@ -234,9 +217,9 @@ impl<'x, 'a, 'j, S: Scope<'j>> MapAccess<'x> for JsObjectAccess<'a, 'j, S> {
             return Ok(None);
         }
 
-        let prop_name = self.prop_names.get(self.scope, self.idx)?;
+        let prop_name = self.prop_names.get(self.cx, self.idx)?;
 
-        let mut de = Deserializer::new(self.scope, prop_name);
+        let mut de = Deserializer::new(self.cx, prop_name);
         seed.deserialize(&mut de).map(Some)
     }
 
@@ -247,28 +230,28 @@ impl<'x, 'a, 'j, S: Scope<'j>> MapAccess<'x> for JsObjectAccess<'a, 'j, S> {
         if self.idx >= self.len {
             return Err(ErrorKind::ArrayIndexOutOfBounds(self.len, self.idx))?;
         }
-        let prop_name = self.prop_names.get(self.scope, self.idx)?;
-        let value = self.input.get(self.scope, prop_name)?;
+        let prop_name = self.prop_names.get(self.cx, self.idx)?;
+        let value = self.input.get(self.cx, prop_name)?;
 
         self.idx += 1;
-        let mut de = Deserializer::new(self.scope, value);
+        let mut de = Deserializer::new(self.cx, value);
         let res = seed.deserialize(&mut de)?;
         Ok(res)
     }
 }
 
 #[doc(hidden)]
-struct JsEnumAccess<'a, 'j, S: Scope<'j> + 'a> {
-    scope: &'a mut S,
+struct JsEnumAccess<'a, 'j: 'a> {
+    cx: &'a mut FunctionContext<'j>,
     variant: String,
-    value: Option<Handle<'j, js::JsValue>>,
+    value: Option<Handle<'j, JsValue>>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j, S: Scope<'j>> JsEnumAccess<'a, 'j, S> {
-    fn new(scope: &'a mut S, key: String, value: Option<Handle<'j, js::JsValue>>) -> Self {
+impl<'a, 'j> JsEnumAccess<'a, 'j> {
+    fn new(cx: &'a mut FunctionContext<'j>, key: String, value: Option<Handle<'j, JsValue>>) -> Self {
         JsEnumAccess {
-            scope,
+            cx,
             variant: key,
             value,
         }
@@ -276,9 +259,9 @@ impl<'a, 'j, S: Scope<'j>> JsEnumAccess<'a, 'j, S> {
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j, S: Scope<'j>> EnumAccess<'x> for JsEnumAccess<'a, 'j, S> {
+impl<'x, 'a, 'j> EnumAccess<'x> for JsEnumAccess<'a, 'j> {
     type Error = LibError;
-    type Variant = JsVariantAccess<'a, 'j, S>;
+    type Variant = JsVariantAccess<'a, 'j>;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
     where
@@ -286,32 +269,32 @@ impl<'x, 'a, 'j, S: Scope<'j>> EnumAccess<'x> for JsEnumAccess<'a, 'j, S> {
     {
         use serde::de::IntoDeserializer;
         let variant = self.variant.into_deserializer();
-        let variant_access = JsVariantAccess::new(self.scope, self.value);
+        let variant_access = JsVariantAccess::new(self.cx, self.value);
         seed.deserialize(variant).map(|v| (v, variant_access))
     }
 }
 
 #[doc(hidden)]
-struct JsVariantAccess<'a, 'j, S: Scope<'j> + 'a> {
-    scope: &'a mut S,
-    value: Option<Handle<'j, js::JsValue>>,
+struct JsVariantAccess<'a, 'j: 'a> {
+    cx: &'a mut FunctionContext<'j>,
+    value: Option<Handle<'j, JsValue>>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j, S: Scope<'j>> JsVariantAccess<'a, 'j, S> {
-    fn new(scope: &'a mut S, value: Option<Handle<'j, js::JsValue>>) -> Self {
-        JsVariantAccess { scope, value }
+impl<'a, 'j> JsVariantAccess<'a, 'j> {
+    fn new(cx: &'a mut FunctionContext<'j>, value: Option<Handle<'j, JsValue>>) -> Self {
+        JsVariantAccess { cx, value }
     }
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j, S: Scope<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, S> {
+impl<'x, 'a, 'j> VariantAccess<'x> for JsVariantAccess<'a, 'j> {
     type Error = LibError;
 
     fn unit_variant(self) -> Result<(), Self::Error> {
         match self.value {
             Some(val) => {
-                let mut deserializer = Deserializer::new(self.scope, val);
+                let mut deserializer = Deserializer::new(self.cx, val);
                 serde::de::Deserialize::deserialize(&mut deserializer)
             }
             None => Ok(()),
@@ -324,7 +307,7 @@ impl<'x, 'a, 'j, S: Scope<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, S> 
     {
         match self.value {
             Some(val) => {
-                let mut deserializer = Deserializer::new(self.scope, val);
+                let mut deserializer = Deserializer::new(self.cx, val);
                 seed.deserialize(&mut deserializer)
             }
             None => Err(serde::de::Error::invalid_type(
@@ -338,15 +321,18 @@ impl<'x, 'a, 'j, S: Scope<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, S> 
     where
         V: Visitor<'x>,
     {
-        match self.value.map(|v| v.variant()) {
-            Some(Variant::Array(val)) => {
-                let mut deserializer = JsArrayAccess::new(self.scope, val);
-                visitor.visit_seq(&mut deserializer)
-            }
-            Some(_) => Err(serde::de::Error::invalid_type(
-                Unexpected::Other("JsValue"),
-                &"tuple variant",
-            )),
+        match self.value {
+            Some(handle) => {
+                if let Ok(val) = handle.downcast::<JsArray>() {
+                    let mut deserializer = JsArrayAccess::new(self.cx, val);
+                    visitor.visit_seq(&mut deserializer)
+                } else {
+                    Err(serde::de::Error::invalid_type(
+                        Unexpected::Other("JsValue"),
+                        &"tuple variant",
+                    ))
+                }
+            },
             None => Err(serde::de::Error::invalid_type(
                 Unexpected::UnitVariant,
                 &"tuple variant",
@@ -362,15 +348,18 @@ impl<'x, 'a, 'j, S: Scope<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, S> 
     where
         V: Visitor<'x>,
     {
-        match self.value.map(|v| v.variant()) {
-            Some(Variant::Object(val)) => {
-                let mut deserializer = JsObjectAccess::new(self.scope, val)?;
-                visitor.visit_map(&mut deserializer)
-            }
-            Some(_) => Err(serde::de::Error::invalid_type(
-                Unexpected::Other("JsValue"),
-                &"struct variant",
-            )),
+        match self.value {
+            Some(handle) => {
+                if let Ok(val) = handle.downcast::<JsObject>() {
+                    let mut deserializer = JsObjectAccess::new(self.cx, val)?;
+                    visitor.visit_map(&mut deserializer)
+                } else {
+                    Err(serde::de::Error::invalid_type(
+                        Unexpected::Other("JsValue"),
+                        &"struct variant",
+                    ))
+                }
+            },
             _ => Err(serde::de::Error::invalid_type(
                 Unexpected::UnitVariant,
                 &"struct variant",
