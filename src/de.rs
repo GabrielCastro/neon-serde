@@ -17,30 +17,31 @@ use serde::de::{DeserializeOwned, DeserializeSeed, EnumAccess, MapAccess, SeqAcc
 ///
 /// Can fail for various reasons see `ErrorKind`
 ///
-pub fn from_value<'j, T>(cx: &mut CallContext<'j, JsObject>, value: Handle<'j, JsValue>) -> LibResult<T>
+pub fn from_value<'j, C, T>(cx: &mut C, value: Handle<'j, JsValue>) -> LibResult<T>
 where
+    C: Context<'j>,
     T: DeserializeOwned + ?Sized,
 {
-    let mut deserializer: Deserializer = Deserializer::new(cx, value);
+    let mut deserializer: Deserializer<C> = Deserializer::new(cx, value);
     let t = T::deserialize(&mut deserializer)?;
     Ok(t)
 }
 
 #[doc(hidden)]
-pub struct Deserializer<'a, 'j: 'a> {
-    cx: &'a mut FunctionContext<'j>,
+pub struct Deserializer<'a, 'j, C: Context<'j> + 'a> {
+    cx: &'a mut C,
     input: Handle<'j, JsValue>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j> Deserializer<'a, 'j> {
-    fn new(cx: &'a mut FunctionContext<'j>, input: Handle<'j, JsValue>) -> Self {
+impl<'a, 'j, C: Context<'j>> Deserializer<'a, 'j, C> {
+    fn new(cx: &'a mut C, input: Handle<'j, JsValue>) -> Self {
         Deserializer { cx, input }
     }
 }
 
 #[doc(hidden)]
-impl<'x, 'd, 'a, 'j> serde::de::Deserializer<'x> for &'d mut Deserializer<'a, 'j> {
+impl<'x, 'd, 'a, 'j, C: Context<'j>> serde::de::Deserializer<'x> for &'d mut Deserializer<'a, 'j, C> {
     type Error = LibError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -147,16 +148,16 @@ impl<'x, 'd, 'a, 'j> serde::de::Deserializer<'x> for &'d mut Deserializer<'a, 'j
 }
 
 #[doc(hidden)]
-struct JsArrayAccess<'a, 'j: 'a> {
-    cx: &'a mut FunctionContext<'j>,
+struct JsArrayAccess<'a, 'j, C: Context<'j> + 'a> {
+    cx: &'a mut C,
     input: Handle<'j, JsArray>,
     idx: u32,
     len: u32,
 }
 
 #[doc(hidden)]
-impl<'a, 'j> JsArrayAccess<'a, 'j> {
-    fn new(cx: &'a mut FunctionContext<'j>, input: Handle<'j, JsArray>) -> Self {
+impl<'a, 'j, C: Context<'j>> JsArrayAccess<'a, 'j, C> {
+    fn new(cx: &'a mut C, input: Handle<'j, JsArray>) -> Self {
         JsArrayAccess {
             cx,
             input,
@@ -167,7 +168,7 @@ impl<'a, 'j> JsArrayAccess<'a, 'j> {
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j> SeqAccess<'x> for JsArrayAccess<'a, 'j> {
+impl<'x, 'a, 'j, C: Context<'j>> SeqAccess<'x> for JsArrayAccess<'a, 'j, C> {
     type Error = LibError;
 
     fn next_element_seed<T>(&mut self, seed: T) -> LibResult<Option<T::Value>>
@@ -186,8 +187,8 @@ impl<'x, 'a, 'j> SeqAccess<'x> for JsArrayAccess<'a, 'j> {
 }
 
 #[doc(hidden)]
-struct JsObjectAccess<'a, 'j: 'a> {
-    cx: &'a mut FunctionContext<'j>,
+struct JsObjectAccess<'a, 'j, C: Context<'j> + 'a> {
+    cx: &'a mut C,
     input: Handle<'j, JsObject>,
     prop_names: Handle<'j, JsArray>,
     idx: u32,
@@ -195,8 +196,8 @@ struct JsObjectAccess<'a, 'j: 'a> {
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j> JsObjectAccess<'a, 'j> {
-    fn new(cx: &'a mut FunctionContext<'j>, input: Handle<'j, JsObject>) -> LibResult<Self> {
+impl<'x, 'a, 'j, C: Context<'j>> JsObjectAccess<'a, 'j, C> {
+    fn new(cx: &'a mut C, input: Handle<'j, JsObject>) -> LibResult<Self> {
         let prop_names = input.get_own_property_names(cx)?;
         let len = prop_names.len();
 
@@ -211,7 +212,7 @@ impl<'x, 'a, 'j> JsObjectAccess<'a, 'j> {
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j> MapAccess<'x> for JsObjectAccess<'a, 'j> {
+impl<'x, 'a, 'j, C: Context<'j>> MapAccess<'x> for JsObjectAccess<'a, 'j, C> {
     type Error = LibError;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
@@ -246,15 +247,15 @@ impl<'x, 'a, 'j> MapAccess<'x> for JsObjectAccess<'a, 'j> {
 }
 
 #[doc(hidden)]
-struct JsEnumAccess<'a, 'j: 'a> {
-    cx: &'a mut FunctionContext<'j>,
+struct JsEnumAccess<'a, 'j, C: Context<'j> + 'a> {
+    cx: &'a mut C,
     variant: String,
     value: Option<Handle<'j, JsValue>>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j> JsEnumAccess<'a, 'j> {
-    fn new(cx: &'a mut FunctionContext<'j>, key: String, value: Option<Handle<'j, JsValue>>) -> Self {
+impl<'a, 'j, C: Context<'j>> JsEnumAccess<'a, 'j, C> {
+    fn new(cx: &'a mut C, key: String, value: Option<Handle<'j, JsValue>>) -> Self {
         JsEnumAccess {
             cx,
             variant: key,
@@ -264,9 +265,9 @@ impl<'a, 'j> JsEnumAccess<'a, 'j> {
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j> EnumAccess<'x> for JsEnumAccess<'a, 'j> {
+impl<'x, 'a, 'j, C: Context<'j>> EnumAccess<'x> for JsEnumAccess<'a, 'j, C> {
     type Error = LibError;
-    type Variant = JsVariantAccess<'a, 'j>;
+    type Variant = JsVariantAccess<'a, 'j, C>;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
     where
@@ -280,20 +281,20 @@ impl<'x, 'a, 'j> EnumAccess<'x> for JsEnumAccess<'a, 'j> {
 }
 
 #[doc(hidden)]
-struct JsVariantAccess<'a, 'j: 'a> {
-    cx: &'a mut FunctionContext<'j>,
+struct JsVariantAccess<'a, 'j, C: Context<'j> + 'a> {
+    cx: &'a mut C,
     value: Option<Handle<'j, JsValue>>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j> JsVariantAccess<'a, 'j> {
-    fn new(cx: &'a mut FunctionContext<'j>, value: Option<Handle<'j, JsValue>>) -> Self {
+impl<'a, 'j, C: Context<'j>> JsVariantAccess<'a, 'j, C> {
+    fn new(cx: &'a mut C, value: Option<Handle<'j, JsValue>>) -> Self {
         JsVariantAccess { cx, value }
     }
 }
 
 #[doc(hidden)]
-impl<'x, 'a, 'j> VariantAccess<'x> for JsVariantAccess<'a, 'j> {
+impl<'x, 'a, 'j, C: Context<'j>> VariantAccess<'x> for JsVariantAccess<'a, 'j, C> {
     type Error = LibError;
 
     fn unit_variant(self) -> Result<(), Self::Error> {

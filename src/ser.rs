@@ -18,8 +18,9 @@ use std::marker::PhantomData;
 /// * `StringTooLong` if the string exceeds v8's max string size
 ///
 #[inline]
-pub fn to_value<'j, V>(cx: &mut FunctionContext<'j>, value: &V) -> LibResult<Handle<'j, JsValue>>
+pub fn to_value<'j, C, V>(cx: &mut C, value: &V) -> LibResult<Handle<'j, JsValue>>
 where
+    C: Context<'j>,
     V: Serialize + ?Sized,
 {
     let serializer = Serializer {
@@ -31,61 +32,75 @@ where
 }
 
 #[doc(hidden)]
-pub struct Serializer<'a, 'j: 'a>
+pub struct Serializer<'a, 'j, C: 'a>
+where
+    C: Context<'j>,
 {
-    cx: &'a mut FunctionContext<'j>,
+    cx: &'a mut C,
     ph: PhantomData<&'j ()>,
 }
 
 #[doc(hidden)]
-pub struct ArraySerializer<'a, 'j: 'a>
+pub struct ArraySerializer<'a, 'j, C: 'a>
+where
+    C: Context<'j>,
 {
-    cx: &'a mut FunctionContext<'j>,
+    cx: &'a mut C,
     array: Handle<'j, JsArray>,
 }
 
 #[doc(hidden)]
-pub struct TupleVariantSerializer<'a, 'j: 'a>
+pub struct TupleVariantSerializer<'a, 'j, C: 'a>
+where
+    C: Context<'j>,
 {
     outter_object: Handle<'j, JsObject>,
-    inner: ArraySerializer<'a, 'j>,
+    inner: ArraySerializer<'a, 'j, C>,
 }
 
 #[doc(hidden)]
-pub struct MapSerializer<'a, 'j: 'a>
+pub struct MapSerializer<'a, 'j, C: 'a>
+where
+    C: Context<'j>,
 {
-    cx: &'a mut FunctionContext<'j>,
+    cx: &'a mut C,
     object: Handle<'j, JsObject>,
     key_holder: Handle<'j, JsObject>,
 }
 
 #[doc(hidden)]
-pub struct StructSerializer<'a, 'j: 'a>
+pub struct StructSerializer<'a, 'j, C: 'a>
+where
+    C: Context<'j>,
 {
-    cx: &'a mut FunctionContext<'j>,
+    cx: &'a mut C,
     object: Handle<'j, JsObject>,
 }
 
 #[doc(hidden)]
-pub struct StructVariantSerializer<'a, 'j: 'a>
+pub struct StructVariantSerializer<'a, 'j, C: 'a>
+where
+    C: Context<'j>,
 {
     outer_object: Handle<'j, JsObject>,
-    inner: StructSerializer<'a, 'j>,
+    inner: StructSerializer<'a, 'j, C>,
 }
 
 #[doc(hidden)]
-impl<'a, 'j> ser::Serializer for Serializer<'a, 'j>
+impl<'a, 'j, C> ser::Serializer for Serializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     type Ok = Handle<'j, JsValue>;
     type Error = Error;
 
-    type SerializeSeq = ArraySerializer<'a, 'j>;
-    type SerializeTuple = ArraySerializer<'a, 'j>;
-    type SerializeTupleStruct = ArraySerializer<'a, 'j>;
-    type SerializeTupleVariant = TupleVariantSerializer<'a, 'j>;
-    type SerializeMap = MapSerializer<'a, 'j>;
-    type SerializeStruct = StructSerializer<'a, 'j>;
-    type SerializeStructVariant = StructVariantSerializer<'a, 'j>;
+    type SerializeSeq = ArraySerializer<'a, 'j, C>;
+    type SerializeTuple = ArraySerializer<'a, 'j, C>;
+    type SerializeTupleStruct = ArraySerializer<'a, 'j, C>;
+    type SerializeTupleVariant = TupleVariantSerializer<'a, 'j, C>;
+    type SerializeMap = MapSerializer<'a, 'j, C>;
+    type SerializeStruct = StructSerializer<'a, 'j, C>;
+    type SerializeStructVariant = StructVariantSerializer<'a, 'j, C>;
 
     #[inline]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -284,17 +299,21 @@ impl<'a, 'j> ser::Serializer for Serializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> ArraySerializer<'a, 'j>
+impl<'a, 'j, C> ArraySerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     #[inline]
-    fn new(cx: &'a mut FunctionContext<'j>) -> Self {
+    fn new(cx: &'a mut C) -> Self {
         let array = JsArray::new(cx, 0);
         ArraySerializer { cx, array }
     }
 }
 
 #[doc(hidden)]
-impl<'a, 'j> ser::SerializeSeq for ArraySerializer<'a, 'j>
+impl<'a, 'j, C> ser::SerializeSeq for ArraySerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     type Ok = Handle<'j, JsValue>;
     type Error = Error;
@@ -317,7 +336,9 @@ impl<'a, 'j> ser::SerializeSeq for ArraySerializer<'a, 'j>
     }
 }
 
-impl<'a, 'j> ser::SerializeTuple for ArraySerializer<'a, 'j>
+impl<'a, 'j, C> ser::SerializeTuple for ArraySerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     type Ok = Handle<'j, JsValue>;
     type Error = Error;
@@ -337,7 +358,9 @@ impl<'a, 'j> ser::SerializeTuple for ArraySerializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> ser::SerializeTupleStruct for ArraySerializer<'a, 'j>
+impl<'a, 'j, C> ser::SerializeTupleStruct for ArraySerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     type Ok = Handle<'j, JsValue>;
     type Error = Error;
@@ -357,9 +380,11 @@ impl<'a, 'j> ser::SerializeTupleStruct for ArraySerializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> TupleVariantSerializer<'a, 'j>
+impl<'a, 'j, C> TupleVariantSerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
-    fn new(cx: &'a mut FunctionContext<'j>, key: &'static str) -> LibResult<Self> {
+    fn new(cx: &'a mut C, key: &'static str) -> LibResult<Self> {
         let inner_array = JsArray::new(cx, 0);
         let outter_object = JsObject::new(cx);
         outter_object.set(cx, key, inner_array)?;
@@ -374,7 +399,9 @@ impl<'a, 'j> TupleVariantSerializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> ser::SerializeTupleVariant for TupleVariantSerializer<'a, 'j>
+impl<'a, 'j, C> ser::SerializeTupleVariant for TupleVariantSerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     type Ok = Handle<'j, JsValue>;
     type Error = Error;
@@ -395,9 +422,11 @@ impl<'a, 'j> ser::SerializeTupleVariant for TupleVariantSerializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> MapSerializer<'a, 'j>
+impl<'a, 'j, C> MapSerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
-    fn new(cx: &'a mut FunctionContext<'j>) -> Self {
+    fn new(cx: &'a mut C) -> Self {
         let object = JsObject::new(cx);
         let key_holder = JsObject::new(cx);
         MapSerializer {
@@ -409,7 +438,9 @@ impl<'a, 'j> MapSerializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> ser::SerializeMap for MapSerializer<'a, 'j>
+impl<'a, 'j, C> ser::SerializeMap for MapSerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     type Ok = Handle<'j, JsValue>;
     type Error = Error;
@@ -440,17 +471,21 @@ impl<'a, 'j> ser::SerializeMap for MapSerializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> StructSerializer<'a, 'j>
+impl<'a, 'j, C> StructSerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     #[inline]
-    fn new(cx: &'a mut FunctionContext<'j>) -> Self {
+    fn new(cx: &'a mut C) -> Self {
         let object = JsObject::new(cx);
         StructSerializer { cx, object }
     }
 }
 
 #[doc(hidden)]
-impl<'a, 'j> ser::SerializeStruct for StructSerializer<'a, 'j>
+impl<'a, 'j, C> ser::SerializeStruct for StructSerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     type Ok = Handle<'j, JsValue>;
     type Error = Error;
@@ -476,9 +511,11 @@ impl<'a, 'j> ser::SerializeStruct for StructSerializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> StructVariantSerializer<'a, 'j>
+impl<'a, 'j, C> StructVariantSerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
-    fn new(cx: &'a mut FunctionContext<'j>, key: &'static str) -> LibResult<Self> {
+    fn new(cx: &'a mut C, key: &'static str) -> LibResult<Self> {
         let inner_object = JsObject::new(cx);
         let outter_object = JsObject::new(cx);
         outter_object.set(cx, key, inner_object)?;
@@ -493,7 +530,9 @@ impl<'a, 'j> StructVariantSerializer<'a, 'j>
 }
 
 #[doc(hidden)]
-impl<'a, 'j> ser::SerializeStructVariant for StructVariantSerializer<'a, 'j>
+impl<'a, 'j, C> ser::SerializeStructVariant for StructVariantSerializer<'a, 'j, C>
+where
+    C: Context<'j>,
 {
     type Ok = Handle<'j, JsValue>;
     type Error = Error;
