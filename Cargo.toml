@@ -11,7 +11,7 @@ readme = "readme.md"
 serde = "1.*"
 error-chain = "0.11.*"
 neon = "0.2.*"
-neon-runtime = "0.2.x"
+neon-runtime = "0.2.*"
 cast = "0.2.*"
 
 [dev-dependencies]

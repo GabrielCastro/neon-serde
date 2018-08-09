@@ -35,8 +35,7 @@
 //! #[macro_use]
 //! extern crate serde_derive;
 //!
-//! use neon::js::{JsValue, JsUndefined};
-//! use neon::vm::{Call, JsResult};
+//! use neon::prelude::*;
 //!
 //! #[derive(Serialize, Debug, Deserialize)]
 //! struct AnObject {
@@ -45,27 +44,23 @@
 //!     c: String,
 //! }
 //!
-//! fn deserialize_something(call: Call) -> JsResult<JsValue> {
-//!     let scope = call.scope;
-//!     let arg0 = call.arguments
-//!          .require(scope, 0)?
-//!          .check::<JsValue>()?;
+//! fn deserialize_something(mut cx: FunctionContext) -> JsResult<JsValue> {
+//!     let arg0 = cx.argument::<JsValue>(0)?;
 //!
-//!     let arg0_value :AnObject = neon_serde::from_value(scope, arg0)?;
+//!     let arg0_value :AnObject = neon_serde::from_value(&mut cx, arg0)?;
 //!     println!("{:?}", arg0_value);
 //!
 //!     Ok(JsUndefined::new().upcast())
 //! }
 //!
-//! fn serialize_something(call: Call) -> JsResult<JsValue> {
-//!     let scope = call.scope;
+//! fn serialize_something(mut cx: FunctionContext) -> JsResult<JsValue> {
 //!     let value = AnObject {
 //!         a: 1,
 //!         b: vec![2f64, 3f64, 4f64],
 //!         c: "a string".into()
 //!     };
 //!
-//!     let js_value = neon_serde::to_value(scope, &value)?;
+//!     let js_value = neon_serde::to_value(&mut cx, &value)?;
 //!     Ok(js_value)
 //! }
 //!
@@ -94,20 +89,17 @@ pub use ser::to_value;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use neon::js::JsValue;
-    use neon::mem::Handle;
-    use neon::vm::{Call, JsResult};
+    use neon::prelude::*;
 
     #[test]
     fn test_it_compiles() {
-        fn check<'j>(call: Call<'j>) -> JsResult<'j, JsValue> {
-            let scope = call.scope;
+        fn check<'j>(mut cx: FunctionContext<'j>) -> JsResult<'j, JsValue> {
             let result: () = {
-                let arg: Handle<'j, JsValue> = call.arguments.require(scope, 0)?;
-                let () = from_value(scope, arg)?;
+                let arg: Handle<'j, JsValue> = cx.argument::<JsValue>(0)?;
+                let () = from_value(&mut cx, arg)?;
                 ()
             };
-            let result: Handle<'j, JsValue> = to_value(scope, &result)?;
+            let result: Handle<'j, JsValue> = to_value(&mut cx, &result)?;
             Ok(result)
         }
 
