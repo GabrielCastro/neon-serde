@@ -28,7 +28,7 @@ enum TypeEnum {
     Value(Vec<char>),
 }
 
-#[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
+#[derive(Serialize, Debug, Deserialize, PartialEq)]
 struct AnObjectTwo {
     a: u32,
     b: Vec<i64>,
@@ -44,6 +44,7 @@ struct AnObjectTwo {
     l: String,
     m: Vec<u8>,
     o: TypeEnum,
+    p: Vec<f64>,
 }
 
 macro_rules! make_test {
@@ -101,6 +102,7 @@ make_test!(make_object, {
         l: "jkl".into(),
         m: vec![0, 1, 2, 3, 4],
         o: TypeEnum::Value(vec!['z', 'y', 'x']),
+        p: vec![1., 2., 3.5],
     };
     value
 });
@@ -147,6 +149,7 @@ make_expect!(
         l: "jkl".into(),
         m: vec![0, 1, 2, 3, 4],
         o: TypeEnum::Value(vec!['z', 'y', 'x']),
+        p: vec![1., 2., 3.5],
     },
     AnObjectTwo
 );
@@ -158,6 +161,14 @@ make_expect!(
     serde_bytes::ByteBuf::from(vec![252u8, 251, 250]),
     serde_bytes::ByteBuf
 );
+
+fn roundtrip_object(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let arg0 = cx.argument::<JsValue>(0)?;
+
+    let de_serialized: AnObjectTwo = neon_serde::from_value(&mut cx, arg0)?;
+    let handle = neon_serde::to_value(&mut cx, &de_serialized)?;
+    Ok(handle)
+}
 
 register_module!(mut m, {
     m.export_function("make_num_77", make_num_77)?;
@@ -173,5 +184,7 @@ register_module!(mut m, {
     m.export_function("expect_obj", expect_obj)?;
     m.export_function("expect_num_array", expect_num_array)?;
     m.export_function("expect_buffer", expect_buffer)?;
+
+    m.export_function("roundtrip_object", roundtrip_object)?;
     Ok(())
 });
