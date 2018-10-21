@@ -5,9 +5,7 @@ extern crate serde_bytes;
 #[macro_use]
 extern crate serde_derive;
 
-use neon::js::{JsUndefined, JsValue};
-use neon::mem::Handle;
-use neon::vm::{Call, JsResult};
+use neon::prelude::*;
 
 #[derive(Serialize, Debug, Deserialize)]
 struct AnObject {
@@ -30,7 +28,7 @@ enum TypeEnum {
     Value(Vec<char>),
 }
 
-#[derive(Serialize, Debug, Deserialize, Eq, PartialEq)]
+#[derive(Serialize, Debug, Deserialize, PartialEq)]
 struct AnObjectTwo {
     a: u32,
     b: Vec<i64>,
@@ -46,20 +44,20 @@ struct AnObjectTwo {
     l: String,
     m: Vec<u8>,
     o: TypeEnum,
+    p: Vec<f64>,
 }
 
 macro_rules! make_test {
     ($name:ident, $val:expr) => {
-        fn $name(call: Call) -> JsResult<JsValue> {
-            fn inner(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
-                let scope = call.scope;
+        fn $name(cx: FunctionContext) -> JsResult<JsValue> {
+            fn inner(mut cx: FunctionContext) -> neon_serde::errors::Result<Handle<JsValue>> {
                 let value = $val;
 
-                let handle = neon_serde::to_value(scope, &value)?;
+                let handle = neon_serde::to_value(&mut cx, &value)?;
                 Ok(handle)
             }
 
-            Ok(inner(call)?)
+            Ok(inner(cx)?)
         }
     };
 }
@@ -104,6 +102,7 @@ make_test!(make_object, {
         l: "jkl".into(),
         m: vec![0, 1, 2, 3, 4],
         o: TypeEnum::Value(vec!['z', 'y', 'x']),
+        p: vec![1., 2., 3.5],
     };
     value
 });
@@ -114,18 +113,16 @@ make_test!(make_buff, { serde_bytes::Bytes::new(NUMBER_BYTES) });
 
 macro_rules! make_expect {
     ($name:ident, $val:expr, $val_type:ty) => {
-        fn $name(call: Call) -> JsResult<JsValue> {
-            fn inner(call: Call) -> neon_serde::errors::Result<Handle<JsValue>> {
-                let scope = call.scope;
+        fn $name(cx: FunctionContext) -> JsResult<JsValue> {
+            fn inner(mut cx: FunctionContext) -> neon_serde::errors::Result<Handle<JsValue>> {
                 let value = $val;
-                let arg0 = call.arguments
-                    .require(scope, 0)?;
+                let arg0 = cx.argument::<JsValue>(0)?;
 
-                let de_serialized: $val_type = neon_serde::from_value(scope, arg0)?;
+                let de_serialized: $val_type = neon_serde::from_value(&mut cx, arg0)?;
                 assert_eq!(value, de_serialized);
                 Ok(JsUndefined::new().upcast())
             }
-            Ok(inner(call)?)
+            Ok(inner(cx)?)
         }
     };
 }
@@ -152,6 +149,7 @@ make_expect!(
         l: "jkl".into(),
         m: vec![0, 1, 2, 3, 4],
         o: TypeEnum::Value(vec!['z', 'y', 'x']),
+        p: vec![1., 2., 3.5],
     },
     AnObjectTwo
 );
@@ -164,19 +162,29 @@ make_expect!(
     serde_bytes::ByteBuf
 );
 
-register_module!(m, {
-    m.export("make_num_77", make_num_77)?;
-    m.export("make_num_32", make_num_32)?;
-    m.export("make_str_hello", make_str_hello)?;
-    m.export("make_num_array", make_num_array)?;
-    m.export("make_buff", make_buff)?;
-    m.export("make_obj", make_obj)?;
-    m.export("make_object", make_object)?;
-    m.export("make_map", make_map)?;
+fn roundtrip_object(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let arg0 = cx.argument::<JsValue>(0)?;
 
-    m.export("expect_hello_world", expect_hello_world)?;
-    m.export("expect_obj", expect_obj)?;
-    m.export("expect_num_array", expect_num_array)?;
-    m.export("expect_buffer", expect_buffer)?;
+    let de_serialized: AnObjectTwo = neon_serde::from_value(&mut cx, arg0)?;
+    let handle = neon_serde::to_value(&mut cx, &de_serialized)?;
+    Ok(handle)
+}
+
+register_module!(mut m, {
+    m.export_function("make_num_77", make_num_77)?;
+    m.export_function("make_num_32", make_num_32)?;
+    m.export_function("make_str_hello", make_str_hello)?;
+    m.export_function("make_num_array", make_num_array)?;
+    m.export_function("make_buff", make_buff)?;
+    m.export_function("make_obj", make_obj)?;
+    m.export_function("make_object", make_object)?;
+    m.export_function("make_map", make_map)?;
+
+    m.export_function("expect_hello_world", expect_hello_world)?;
+    m.export_function("expect_obj", expect_obj)?;
+    m.export_function("expect_num_array", expect_num_array)?;
+    m.export_function("expect_buffer", expect_buffer)?;
+
+    m.export_function("roundtrip_object", roundtrip_object)?;
     Ok(())
 });

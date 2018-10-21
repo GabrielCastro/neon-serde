@@ -11,22 +11,20 @@ macro_rules! export {
             fn $name($( $arg: $atype ),*) -> $ret $code
         )*
 
-        register_module!(m, {
+        register_module!(mut m, {
             $(
-                m.export(stringify!($name), |call| {
-                    let scope = call.scope;
-
+                m.export_function(stringify!($name), |mut cx| {
                     // Can be done away with a fancier macro
                     let mut _arg_index = 0;
 
                     $(
-                        let $arg = call.arguments.require(scope, _arg_index)?;
-                        let $arg: $atype = $crate::from_value(scope, $arg)?;
+                        let $arg = cx.argument::<neon::types::JsValue>(_arg_index)?;
+                        let $arg: $atype = $crate::from_value(&mut cx, $arg)?;
                         _arg_index += 1;
                     )*
 
                     let result = $name($( $arg ),*);
-                    let handle = $crate::to_value(scope, &result)?;
+                    let handle = $crate::to_value(&mut cx, &result)?;
                     Ok(handle)
                 })?;
             )*

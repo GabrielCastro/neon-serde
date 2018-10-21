@@ -48,7 +48,8 @@ describe('all values ok', () => {
             k: {Struct: { a: 128, b: [9, 8, 7]}},
             l: "jkl",
             m: [0,1,2,3,4],
-            o: {Value: ['z', 'y', 'x']}
+            o: {Value: ['z', 'y', 'x']},
+            p: [1, 2, 3.5]
         });
     });
 
@@ -76,7 +77,8 @@ describe('all values ok', () => {
             k: {Struct: { a: 128, b: [9, 8, 7]}},
             l: "jkl",
             m: [0,1,2,3,4],
-            o: {Value: ['z', 'y', 'x']}
+            o: {Value: ['z', 'y', 'x']},
+            p: [1, 2, 3.5]
         };
 
         o.self = o;
@@ -97,6 +99,33 @@ describe('all values ok', () => {
         if (version >= 57) {
             native.expect_buffer(new Uint8ClampedArray([252, 251, 250]));
         }
+    });
+
+    test('rt_rust_js_rust', () => {
+        const obj = native.make_object();
+        native.expect_obj(obj);
+    });
+
+    test('rt_js_rust_js', () => {
+        const o = {
+            a: 1,
+            b: [1, 2],
+            c: "abc",
+            d: false,
+            e: null,
+            f: null,
+            g: [9, false, "efg"],
+            h: '\uD83E\uDD37',
+            i: "Empty",
+            j: {Tuple: [27, "hij"]},
+            k: {Struct: { a: 128, b: [9, 8, 7]}},
+            l: "jkl",
+            m: [0,1,2,3,4],
+            o: {Value: ['z', 'y', 'x']},
+            p: [1, 2, 3.5]
+        };
+        const o2 = native.roundtrip_object(o);
+        expect(o).toEqual(o2);
     });
 });
 

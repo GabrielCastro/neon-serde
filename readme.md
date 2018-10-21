@@ -70,8 +70,7 @@ extern crate neon;
 #[macro_use]
 extern crate serde_derive;
 
-use neon::js::{JsValue, JsUndefined};
-use neon::vm::{Call, JsResult};
+use neon::prelude::*;
 
 #[derive(Serialize, Debug, Deserialize)]
 struct AnObject {
@@ -80,30 +79,25 @@ struct AnObject {
     c: String,
 }
 
-fn deserialize_something(call: Call) -> JsResult<JsValue> {
-    let scope = call.scope;
-    let arg0 = call.arguments
-         .require(scope, 0)?
-         .check::<JsValue>()?;
+fn deserialize_something(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let arg0 = cx.argument::<JsValue>(0)?;
 
-    let arg0_value :AnObject = neon_serde::from_value(scope, arg0)?;
+    let arg0_value :AnObject = neon_serde::from_value(&mut cx, arg0)?;
     println!("{:?}", arg0_value);
 
     Ok(JsUndefined::new().upcast())
 }
 
-fn serialize_something(call: Call) -> JsResult<JsValue> {
-    let scope = call.scope;
+fn serialize_something(mut cx: FunctionContext) -> JsResult<JsValue> {
     let value = AnObject {
         a: 1,
         b: vec![2f64, 3f64, 4f64],
         c: "a string".into()
     };
 
-    let js_value = neon_serde::to_value(scope, &value)?;
+    let js_value = neon_serde::to_value(&mut cx, &value)?;
     Ok(js_value)
 }
-
 ```
 
 ## Limitations
