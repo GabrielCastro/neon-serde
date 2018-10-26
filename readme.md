@@ -103,4 +103,4 @@ fn serialize_something(mut cx: FunctionContext) -> JsResult<JsValue> {
 ## Limitations
 
 ### Data ownership
-All Deserialize Values must own all thier data (they must have the trait `serde::DererializeOwned`)
+All Deserialize Values must own all their data (they must have the trait `serde::DererializeOwned`)
