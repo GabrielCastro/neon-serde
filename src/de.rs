@@ -27,6 +27,15 @@ where
     Ok(t)
 }
 
+pub fn from_value_opt<'j, C, T>(cx: &mut C, value: Option<Handle<'j, JsValue>>) -> LibResult<T>
+where
+    C: Context<'j>,
+    T: DeserializeOwned + ?Sized,
+{
+    let unwrapped = value.unwrap_or_else(|| JsUndefined::new().upcast());
+    from_value(cx, unwrapped)
+}
+
 #[doc(hidden)]
 pub struct Deserializer<'a, 'j, C: Context<'j> + 'a> {
     cx: &'a mut C,

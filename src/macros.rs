@@ -4,10 +4,14 @@
 
 #[macro_export]
 macro_rules! export {
-    (
-        $( fn $name:ident($( $arg:ident : $atype:ty ),*) -> $ret:ty $code:block )*
-    ) => (
+
+    ($(
+        $(#[$func_meta:meta])*
+        fn $name:ident($( $arg:ident : $atype:ty ),*) -> $ret:ty $code:block
+    )*) => (
         $(
+            #[allow(non_snake_case)]
+            $(#[$func_meta])*
             fn $name($( $arg: $atype ),*) -> $ret $code
         )*
 
@@ -18,8 +22,8 @@ macro_rules! export {
                     let mut _arg_index = 0;
 
                     $(
-                        let $arg = cx.argument::<neon::types::JsValue>(_arg_index)?;
-                        let $arg: $atype = $crate::from_value(&mut cx, $arg)?;
+                        let $arg = cx.argument_opt(_arg_index);
+                        let $arg: $atype = $crate::from_value_opt(&mut cx, $arg)?;
                         _arg_index += 1;
                     )*
 
