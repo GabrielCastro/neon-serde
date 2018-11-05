@@ -6,7 +6,7 @@ Neon-serde
 
 This crate is a utility to easily convert values between
 
-A `Handle<JsValue>` from the [https://github.com/neon-bindings/neon](neon) crate
+A `Handle<JsValue>` from the [neon](https://github.com/neon-bindings/neon) crate
 and any value implementing `serde::{Serialize, Deserialize}`
 
 ## Versions support
