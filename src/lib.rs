@@ -84,6 +84,7 @@ pub mod errors;
 mod macros;
 
 pub use de::from_value;
+pub use de::from_value_opt;
 pub use ser::to_value;
 
 #[cfg(test)]
@@ -97,6 +98,21 @@ mod tests {
             let result: () = {
                 let arg: Handle<'j, JsValue> = cx.argument::<JsValue>(0)?;
                 let () = from_value(&mut cx, arg)?;
+                ()
+            };
+            let result: Handle<'j, JsValue> = to_value(&mut cx, &result)?;
+            Ok(result)
+        }
+
+        let _ = check;
+    }
+
+    #[test]
+    fn test_it_compiles_2() {
+        fn check<'j>(mut cx: FunctionContext<'j>) -> JsResult<'j, JsValue> {
+            let result: () = {
+                let arg: Option<Handle<'j, JsValue>> = cx.argument_opt(0);
+                let () = from_value_opt(&mut cx, arg)?;
                 ()
             };
             let result: Handle<'j, JsValue> = to_value(&mut cx, &result)?;

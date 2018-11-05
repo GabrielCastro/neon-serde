@@ -27,6 +27,15 @@ where
     Ok(t)
 }
 
+pub fn from_value_opt<'j, C, T>(cx: &mut C, value: Option<Handle<'j, JsValue>>) -> LibResult<T>
+where
+    C: Context<'j>,
+    T: DeserializeOwned + ?Sized,
+{
+    let unwrapped = value.unwrap_or_else(|| JsUndefined::new().upcast());
+    from_value(cx, unwrapped)
+}
+
 #[doc(hidden)]
 pub struct Deserializer<'a, 'j, C: Context<'j> + 'a> {
     cx: &'a mut C,
@@ -61,6 +70,8 @@ impl<'x, 'd, 'a, 'j, C: Context<'j>> serde::de::Deserializer<'x> for &'d mut Des
             } else {
                 visitor.visit_f64(v)
             }
+        } else if let Ok(_val) = self.input.downcast::<JsBuffer>() {
+            self.deserialize_bytes(visitor)
         } else if let Ok(val) = self.input.downcast::<JsArray>() {
             let mut deserializer = JsArrayAccess::new(self.cx, val);
             visitor.visit_seq(&mut deserializer)
