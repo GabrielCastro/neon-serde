@@ -17,7 +17,7 @@
 //!
 //! ## Usage
 //!
-//! #### `neon_serde::from_handle`
+//! #### `neon_serde::from_value`
 //! Convert a `Handle<js::JsValue>` to
 //! a type implementing `serde::Deserialize`
 //!
