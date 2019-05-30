@@ -172,9 +172,19 @@ where
         Ok(js_str.upcast())
     }
 
+    #[cfg(target_pointer_width = "64")]
     #[inline]
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
         let mut buff = JsBuffer::new(self.cx, cast::u32(v.len())?)?;
+        self.cx.borrow_mut(&mut buff, |buff| buff.as_mut_slice().clone_from_slice(v));
+        Ok(buff.upcast())
+    }
+
+
+    #[cfg(not(target_pointer_width = "64"))]
+    #[inline]
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        let mut buff = JsBuffer::new(self.cx, cast::u32(v.len()))?;
         self.cx.borrow_mut(&mut buff, |buff| buff.as_mut_slice().clone_from_slice(v));
         Ok(buff.upcast())
     }
