@@ -11,8 +11,8 @@ and any value implementing `serde::{Serialize, Deserialize}`
 
 ## Versions support
 
-neon-serde targets node >= 6.0
-`Uint8ClampedArray` only works on node >= 8
+neon-serde is tested on node
+`8` `10` `12`
 
 ## Usage
 
