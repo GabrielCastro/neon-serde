@@ -7,7 +7,7 @@
   "license": "MIT",
   "devDependencies": {
     "jest": "^20.0.4",
-    "neon-cli": "^0.2.0"
+    "neon-cli": "^0.3.1"
   },
   "scripts": {
     "build": "neon build --release",
