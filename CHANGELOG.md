@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.1.2
+
+### Features
+
+* Update to neon 0.3.1
+* Support for nodeJS 12.*
+
+### BREAKING
+
+* Removed support for nodeJS 6.* (end of life)
+
 ## Version 0.1.1
 
 ### Features
