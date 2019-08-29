@@ -6,7 +6,7 @@
   "author": "Gabriel Castro <dev@GabrielCastro.ca>",
   "license": "MIT",
   "devDependencies": {
-    "jest": "^20.0.4",
+    "jest": "^24.9.0",
     "neon-cli": "^0.3.1"
   },
   "scripts": {
