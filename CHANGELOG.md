@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.2.0
+
+### Features
+
+* Update to neon 0.3.1
+* Support for nodeJS 12.*
+
+### BREAKING
+
+* Removed support for nodeJS 6.* (end of life)
+
 ## Version 0.1.1
 
 ### Features
@@ -17,7 +28,7 @@ export! {
     fn get_length(name: Option<String>) -> Option<u8> {
         name.map(|n| n.len())
     }
-    
+
     /// Makes a `Buffer` node side
     fn get_big_data() -> serde_bytes::ByteBuf {
         let data: Vec<u8> = ...;
