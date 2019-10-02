@@ -45,6 +45,8 @@ struct AnObjectTwo {
     m: Vec<u8>,
     o: TypeEnum,
     p: Vec<f64>,
+    q: u128,
+    r: i128,
 }
 
 macro_rules! make_test {
@@ -103,6 +105,8 @@ make_test!(make_object, {
         m: vec![0, 1, 2, 3, 4],
         o: TypeEnum::Value(vec!['z', 'y', 'x']),
         p: vec![1., 2., 3.5],
+        q: 999,
+        r: 333
     };
     value
 });
@@ -150,6 +154,8 @@ make_expect!(
         m: vec![0, 1, 2, 3, 4],
         o: TypeEnum::Value(vec!['z', 'y', 'x']),
         p: vec![1., 2., 3.5],
+        q: 999,
+        r: 333
     },
     AnObjectTwo
 );

@@ -135,6 +135,12 @@ where
     }
 
     #[inline]
+    fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
+    }
+
+
+    #[inline]
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
         Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
@@ -151,6 +157,11 @@ where
 
     #[inline]
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
+    }
+
+    #[inline]
+    fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
         Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 

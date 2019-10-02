@@ -50,7 +50,9 @@ describe('all values ok', () => {
             l: "jkl",
             m: [0,1,2,3,4],
             o: {Value: ['z', 'y', 'x']},
-            p: [1, 2, 3.5]
+            p: [1, 2, 3.5],
+            q: 999,
+            r: 333,
         });
     });
 
@@ -79,7 +81,9 @@ describe('all values ok', () => {
             l: "jkl",
             m: [0,1,2,3,4],
             o: {Value: ['z', 'y', 'x']},
-            p: [1, 2, 3.5]
+            p: [1, 2, 3.5],
+            q: 999,
+            r: 333,
         };
 
         o.self = o;
@@ -123,7 +127,9 @@ describe('all values ok', () => {
             l: "jkl",
             m: [0,1,2,3,4],
             o: {Value: ['z', 'y', 'x']},
-            p: [1, 2, 3.5]
+            p: [1, 2, 3.5],
+            q: 999,
+            r: 333,
         };
         const o2 = native.roundtrip_object(o);
         expect(o).toEqual(o2);
