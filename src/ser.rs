@@ -2,13 +2,20 @@
 //! Serialize a Rust data structure into a `JsValue`
 //!
 
-use cast;
 use errors::Error;
 use errors::ErrorKind;
 use errors::Result as LibResult;
 use neon::prelude::*;
 use serde::ser::{self, Serialize};
 use std::marker::PhantomData;
+use num;
+
+fn as_num<T: num::cast::NumCast, OutT: num::cast::NumCast>(n: T) -> LibResult<OutT> {
+    match num::cast::<T, OutT>(n) {
+        Some(n2) => Ok(n2),
+        None => bail!(ErrorKind::CastError)
+    }
+}
 
 /// Converts a value of type `V` to a `JsValue`
 ///
@@ -109,47 +116,47 @@ where
 
     #[inline]
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        Ok(JsNumber::new(self.cx, cast::f64(v)).upcast())
+        Ok(JsNumber::new(self.cx, as_num::<_, f64>(v)?).upcast())
     }
 
     #[inline]
@@ -174,7 +181,7 @@ where
 
     #[inline]
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        let mut buff = JsBuffer::new(self.cx, cast::u32(v.len())?)?;
+        let mut buff = JsBuffer::new(self.cx, as_num::<_, u32>(v.len())?)?;
         self.cx.borrow_mut(&mut buff, |buff| buff.as_mut_slice().clone_from_slice(v));
         Ok(buff.upcast())
     }

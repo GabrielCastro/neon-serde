@@ -70,10 +70,10 @@
 //! ```
 //!
 
-extern crate cast;
 #[macro_use]
 extern crate error_chain;
 extern crate neon;
+extern crate num;
 #[macro_use]
 extern crate serde;
 
