@@ -12,7 +12,10 @@ serde = "1.*"
 error-chain = "0.12.*"
 neon = "0.3.1"
 neon-runtime = "0.3.1"
-cast = "0.2.*"
+
+[dependencies.num]
+version = "0.2"
+default-features = false
 
 [dev-dependencies]
 serde_derive = "1.*"

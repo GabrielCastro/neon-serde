@@ -65,11 +65,11 @@ error_chain! {
             description("JS exception")
             display("JS exception")
         }
-    }
-
-    foreign_links {
-        NumberCastError(::cast::Error)
-        #[doc = r"occurs when deserializing a number would cause an over/under flow"];
+        // failed to convert something to f64
+        CastError {
+            description("CastError")
+            display("CastError")
+        }
     }
 }
 
