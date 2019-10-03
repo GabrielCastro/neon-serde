@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.3.0
+
+### Features
+* support u128 and i128 (where they can safely convert to f64)
+* 32-bit support
+
 ## Version 0.2.0
 
 ### Features
