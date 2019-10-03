@@ -6,17 +6,13 @@
   "author": "Gabriel Castro <dev@GabrielCastro.ca>",
   "license": "MIT",
   "devDependencies": {
-    "jest": "^24.9.0",
+    "expect": "^24.9.0",
+    "mocha": "^6.2.1",
     "neon-cli": "^0.3.1"
   },
   "scripts": {
     "build": "neon build --release",
     "build:debug": "neon build",
-    "test": "neon build && jest -i"
-  },
-  "jest": {
-    "verbose": true,
-    "cache": false,
-    "watchman": false
+    "test": "neon build && mocha __tests__"
   }
 }
