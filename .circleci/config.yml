@@ -1,0 +1,11 @@
+ version: 2
+ jobs:
+   build:
+     docker:
+       - image: circleci/rust:1-buster-node
+     steps:
+       - checkout
+       - run:
+           name: 'build'
+           command: cargo build
+        
