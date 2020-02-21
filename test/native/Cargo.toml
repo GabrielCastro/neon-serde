@@ -11,10 +11,10 @@ name = "test"
 crate-type = ["dylib"]
 
 [build-dependencies]
-neon-build = "0.3.1"
+neon-build = "0.4.0"
 
 [dependencies]
-neon = "0.3.1"
+neon = "0.4.0"
 neon-serde = { path = "../../" }
 serde_derive = "1.0.0"
 serde = "1.0.0"
