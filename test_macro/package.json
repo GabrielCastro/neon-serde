@@ -7,8 +7,8 @@
   "license": "MIT",
   "devDependencies": {
     "expect": "^24.9.0",
-    "mocha": "^6.2.1",
-    "neon-cli": "^0.3.1"
+    "mocha": "^6.2.3",
+    "neon-cli": "^0.4.0"
   },
   "scripts": {
     "build": "neon build --release",

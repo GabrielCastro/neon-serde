@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate neon;
 extern crate neon_serde;
 extern crate serde_bytes;
@@ -106,7 +105,7 @@ make_test!(make_object, {
         o: TypeEnum::Value(vec!['z', 'y', 'x']),
         p: vec![1., 2., 3.5],
         q: 999,
-        r: 333
+        r: 333,
     };
     value
 });
