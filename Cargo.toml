@@ -8,17 +8,17 @@ repository = "https://github.com/GabrielCastro/neon-serde"
 readme = "readme.md"
 
 [dependencies]
-serde = "1.*"
-error-chain = "0.12.*"
-neon = "0.3.1"
-neon-runtime = "0.3.1"
+serde = "1"
+error-chain = "0.12"
+neon = "0.4"
+neon-runtime = "0.4"
 
 [dependencies.num]
 version = "0.2"
 default-features = false
 
 [dev-dependencies]
-serde_derive = "1.*"
+serde_derive = "1"
 
 [badges]
 travis-ci = { repository = "GabrielCastro/neon-serde" }

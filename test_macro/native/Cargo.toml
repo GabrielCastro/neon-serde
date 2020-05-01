@@ -11,14 +11,14 @@ name = "test"
 crate-type = ["dylib"]
 
 [build-dependencies]
-neon-build = "0.3.1"
+neon-build = "0.4.0"
 
 [dependencies]
-neon = "0.3.1"
+neon = "0.4.0"
 neon-serde = { path = "../../" }
-serde_derive = "1.*"
-serde = "1.*"
-serde_bytes = "0.10.*"
+serde_derive = "1.0.106"
+serde = "1.0.106"
+serde_bytes = "0.11.3"
 
 [profile.dev]
 codegen-units = 4
