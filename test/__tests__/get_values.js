@@ -53,6 +53,7 @@ describe('all values ok', () => {
             p: [1, 2, 3.5],
             q: 999,
             r: 333,
+            s: 1
         });
     });
 
@@ -84,6 +85,7 @@ describe('all values ok', () => {
             p: [1, 2, 3.5],
             q: 999,
             r: 333,
+            s: 1
         };
 
         o.self = o;
@@ -130,6 +132,7 @@ describe('all values ok', () => {
             p: [1, 2, 3.5],
             q: 999,
             r: 333,
+            s: 1
         };
         const o2 = native.roundtrip_object(o);
         expect(o).toEqual(o2);
