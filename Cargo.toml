@@ -1,6 +1,6 @@
 [package]
 name = "neon-serde"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Gabriel Castro <dev@GabrielCastro.ca>"]
 description = "Easily serialize object for use with neon"
 license = "MIT"
@@ -10,8 +10,8 @@ readme = "readme.md"
 [dependencies]
 serde = "1"
 error-chain = "0.12"
-neon = "0.5"
-neon-runtime = "0.5"
+neon = "0.6"
+neon-runtime = "0.6"
 
 [dependencies.num]
 version = "0.2"
