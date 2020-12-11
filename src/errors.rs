@@ -93,7 +93,11 @@ impl From<Error> for neon::result::Throw {
         };
         let msg = format!("{:?}", err);
         unsafe {
-            neon_runtime::error::throw_error_from_utf8(msg.as_ptr(), msg.len() as i32);
+            neon_runtime::error::throw_error_from_utf8(
+                neon_runtime::call::current_isolate(),
+                msg.as_ptr(),
+                msg.len() as i32,
+            );
             neon::result::Throw
         }
     }
