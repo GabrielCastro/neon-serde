@@ -169,6 +169,6 @@ describe('throwing functions', () => {
             })
         }
         expect(() => native.expect_obj(obj))
-            .toThrow(/Hi There prop c/);
+            .toThrow('JS exception');
     })
 });

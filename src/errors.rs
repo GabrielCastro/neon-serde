@@ -1,8 +1,6 @@
 //! Defines error handling types used by the create
 //! uses the `error-chain` create for generation
 
-extern crate neon_runtime;
-
 use neon;
 use serde::{de, ser};
 use std::convert::From;
@@ -82,20 +80,6 @@ impl ser::Error for Error {
 impl de::Error for Error {
     fn custom<T: Display>(msg: T) -> Self {
         ErrorKind::Msg(msg.to_string()).into()
-    }
-}
-
-#[allow(use_debug)]
-impl From<Error> for neon::result::Throw {
-    fn from(err: Error) -> Self {
-        if let ErrorKind::Js(_) = *err.kind() {
-            return neon::result::Throw;
-        };
-        let msg = format!("{:?}", err);
-        unsafe {
-            neon_runtime::error::throw_error_from_utf8(msg.as_ptr(), msg.len() as i32);
-            neon::result::Throw
-        }
     }
 }
 
