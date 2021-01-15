@@ -10,8 +10,7 @@ readme = "readme.md"
 [dependencies]
 serde = "1"
 error-chain = "0.12"
-neon = "0.4"
-neon-runtime = "0.4"
+neon = "0.7"
 
 [dependencies.num]
 version = "0.2"

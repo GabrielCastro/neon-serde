@@ -114,7 +114,12 @@ struct AnObject {
 fn deserialize_something(mut cx: FunctionContext) -> JsResult<JsValue> {
     let arg0 = cx.argument::<JsValue>(0)?;
 
-    let arg0_value :AnObject = neon_serde::from_value(&mut cx, arg0)?;
+    let arg0_value: AnObject = match neon_serde::from_value(&mut cx, arg0) {
+        Ok(value) => value,
+        Err(e) => {
+            return cx.throw_error(e.to_string());
+        }
+    };
     println!("{:?}", arg0_value);
 
     Ok(JsUndefined::new().upcast())
@@ -127,8 +132,8 @@ fn serialize_something(mut cx: FunctionContext) -> JsResult<JsValue> {
         c: "a string".into()
     };
 
-    let js_value = neon_serde::to_value(&mut cx, &value)?;
-    Ok(js_value)
+    neon_serde::to_value(&mut cx, &value)
+        .or_else(|e| cx.throw_error(e.to_string()))
 }
 ```
 
